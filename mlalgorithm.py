@@ -72,7 +72,7 @@ def analyze_data(actual_bg_test_array, bg_prediction, show_pred_plot, save_pred_
     plt.xlabel("Time (minutes)")
     plt.legend(loc='upper left')
 
-    # CHOOSE IF YOU WANT TO SHOW PLOT OR SAVE PLOT
+    # SHOW/SAVE PLOT DEPENDING ON THE BOOLEAN PARAMETER
     if save_pred_plot: plt.savefig(id_string + algorithm_string.replace(" ","") + minutes_string + "plot.png")
     if show_pred_plot: plt.show()
 

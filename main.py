@@ -49,7 +49,7 @@ from mlalgorithm import *
 
 
 
-#DATA CONSTANTS
+#DATA CONSTANTS MODIFY THESE TO RUN DATA
 
 #Array of the ID to use
 ID_ARRAY = np.array(["00897741"])
@@ -70,11 +70,11 @@ PLOT_LOMB_ARRAY = np.array([])
 #Boolean to show the prediction plot versus the actual bg
 SHOW_PRED_PLOT = False
 #Boolean to save the prediction plot
-SAVE_PRED_PLOT = True
+SAVE_PRED_PLOT = False
 #Boolean to show the Clarke Error Grid plot
 SHOW_CLARKE_PLOT = False
 #Boolean to save the Clarke Error Grid plot
-SAVE_CLARKE_PLOT = True
+SAVE_CLARKE_PLOT = False
 
 
 
