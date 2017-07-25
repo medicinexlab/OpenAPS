@@ -25,12 +25,11 @@ USAGE:
         bg_df, start_train_index, end_train_index, start_test_index, end_test_index = get_bg_data(id_string, start_train_string, end_train_string, start_test_string, end_test_string)
 
 Trevor Tsue
-2017
+2017-7-24
 '''
 
 import pandas as pd
 import numpy as np
-
 
 
 #Function to convert the json file to a dataFrame

@@ -20,13 +20,12 @@ Output:
 USAGE:
     train_data_matrix, actual_bg_train_array = make_data_matrix(bg_df, train_lomb_data, start_train_index, end_train_index, data_minutes, pred_minutes)
     test_data_matrix, actual_bg_test_array = make_data_matrix(bg_df, test_lomb_data, start_test_index, end_test_index, data_minutes, pred_minutes)
+
 Trevor Tsue
-2017
+2017-7-24
 '''
 
-import pandas as pd
 import numpy as np
-from collections import namedtuple
 
 
 #The number of elements for each prediction time section (time, BG, IOB, COB)

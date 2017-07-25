@@ -26,10 +26,9 @@ USAGE:
     train_lomb_data, test_lomb_data = get_bg_array(bg_df, start_train_index, end_train_index, start_test_index, end_test_index, PLOT_LOMB_ARRAY)
 
 Trevor Tsue
-2017
+2017-7-24
 '''
 
-import pandas as pd
 import numpy as np
 import gatspy
 import matplotlib.pyplot as plt
@@ -164,8 +163,8 @@ def _run_lomb_scargle(time_array, value_array, period, num_fourier_terms):
 
 #Plot lomb scargle function
 def _plot_lomb(period, lomb, time_array, value_array, name_string):
-    plt.plot(period, lomb, label='Lomb'+name_string)
-    plt.plot(time_array, value_array, label='Actual'+name_string)
+    plt.plot(period, lomb, label='Lomb '+name_string)
+    plt.plot(time_array, value_array, label='Actual '+name_string)
 
 
 #This function gets the data from the lomb scargle. It takes in the start and end indices and returns a lomb scargle model for BG, IOB, and COB as well as the period
@@ -186,9 +185,9 @@ def _get_lomb_scargle(bg_df, start_index, end_index, plot_lomb_array):
 
         if len(plot_lomb_array) > 0:
             plt.clf()
-            if 0 in plot_lomb_array: _plot_lomb(period, bg_lomb, bg_time_array, bg_value_array, "BG")
-            if 1 in plot_lomb_array: _plot_lomb(period, iob_lomb, iob_time_array, iob_value_array, "IOB")
-            if 2 in plot_lomb_array: _plot_lomb(period, cob_lomb, cob_time_array, cob_value_array, "COB")
+            if "bg" in plot_lomb_array: _plot_lomb(period, bg_lomb, bg_time_array, bg_value_array, "BG")
+            if "iob" in plot_lomb_array: _plot_lomb(period, iob_lomb, iob_time_array, iob_value_array, "IOB")
+            if "cob" in plot_lomb_array: _plot_lomb(period, cob_lomb, cob_time_array, cob_value_array, "COB")
             plt.legend(loc='upper left')
             plt.show()
 
