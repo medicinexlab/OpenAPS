@@ -1,0 +1,2 @@
+Add your data to this data folder. The data should be inside another folder that has the ID number.
+This data file should be called "devicestatus.json"
