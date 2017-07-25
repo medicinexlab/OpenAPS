@@ -17,7 +17,7 @@ the ID number that contains the devicestatus.json file. For example:
         ./data/46966807/devicestatus.json
         ./data/68267781/devicestatus.json
         ./data/84984656/devicestatus.json
-where . represents the current directory with the code
+where . represents the current directory with the code.
 
 The code requires the following files:
         bgdataframe.py
