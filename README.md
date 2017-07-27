@@ -34,6 +34,12 @@ This code also requires the following libraries:
         gatspy
         sklearn
 
+
+Once all of these have been satsified, you can run the code with the following command:
+
+        python main.py
+
+
 Trevor Tsue
 
 2017-7-24
