@@ -58,12 +58,14 @@ ID_ARRAY = np.array(["00897741"])
 DATA_MINUTES_ARRAY = np.array([1,15,30,45,60,75,90,105,120])
 #Array of the minutes in the future that the predictions will be made for.
 PRED_MINUTES_ARRAY = np.array([30])
-#Array of the algorithms that will be tested.
-ALGORITHM_ARRAY = np.array(["Neural Network"])
 #Choose whether to run 'eventualBG', 'iob', 'cob', 'acob'
 #e.g. ['iob', 'acob']
 #Leave empty to run none
 OLD_PRED_ALGORITHM_ARRAY = np.array([])
+#Array of the algorithms that will be tested.
+ALGORITHM_ARRAY = np.array(["Neural Network"])
+
+
 
 
 #PLOTTING CONSTANTS
@@ -73,7 +75,7 @@ OLD_PRED_ALGORITHM_ARRAY = np.array([])
 PLOT_LOMB_ARRAY = np.array([])
 
 #Boolean to show the prediction plot versus the actual bg
-SHOW_PRED_PLOT = False
+SHOW_PRED_PLOT = True
 #Boolean to save the prediction plot
 SAVE_PRED_PLOT = False
 #Boolean to show the Clarke Error Grid plot
@@ -87,6 +89,21 @@ SAVE_CLARKE_PLOT = False
 #Dictionary with the name of the algorithm as the key and the function as the value
 ALGORITHM_DICT = {"Linear Regression":linear_model.LinearRegression(normalize=True),
                     "SVM Linear Regression":svm.SVR(kernel='linear', C=0.01),
+                    "SVM RBF Regression 0.01":svm.SVR(kernel='rbf', gamma=0.01),
+                    "SVM RBF Regression 0.02":svm.SVR(kernel='rbf', gamma=0.02),
+                    "SVM RBF Regression 0.04":svm.SVR(kernel='rbf', gamma=0.04),
+                    "SVM RBF Regression 0.08":svm.SVR(kernel='rbf', gamma=0.08),
+                    "SVM RBF Regression 0.16":svm.SVR(kernel='rbf', gamma=0.16),
+                    "SVM RBF Regression 0.32":svm.SVR(kernel='rbf', gamma=0.32),
+                    "SVM RBF Regression 0.64":svm.SVR(kernel='rbf', gamma=0.64),
+                    "SVM RBF Regression 1.28":svm.SVR(kernel='rbf', gamma=1.28),
+                    "SVM RBF Regression 2.56":svm.SVR(kernel='rbf', gamma=2.56),
+                    "SVM RBF Regression 5.12":svm.SVR(kernel='rbf', gamma=5.12),
+                    "SVM RBF Regression 10.24":svm.SVR(kernel='rbf', gamma=10.24),
+                    "SVM Polynomial Regression 2":svm.SVR(kernel='poly', degree=2),
+                    "SVM Polynomial Regression 3":svm.SVR(kernel='poly', degree=3),
+                    "SVM Polynomial Regression 4":svm.SVR(kernel='poly', degree=4),
+                    "SVM Polynomial Regression 5":svm.SVR(kernel='poly', degree=5),
                     "Ridge Regression":linear_model.Ridge(normalize=True, alpha=0.1),
                     "Logistic Regression":linear_model.LogisticRegression(C=0.0001),
                     "Neural Network":neural_network.MLPRegressor(activation='identity'),
@@ -106,6 +123,21 @@ ALGORITHM_DICT = {"Linear Regression":linear_model.LinearRegression(normalize=Tr
 #Dictionary with the name of the algorithm as the key and boolean to apply the StandardScaler transformation as the value
 ALGORITHM_TRANSFORM = {"Linear Regression":False,
                         "SVM Linear Regression":True,
+                        "SVM RBF Regression 0.01":True,
+                        "SVM RBF Regression 0.02":True,
+                        "SVM RBF Regression 0.04":True,
+                        "SVM RBF Regression 0.08":True,
+                        "SVM RBF Regression 0.16":True,
+                        "SVM RBF Regression 0.32":True,
+                        "SVM RBF Regression 0.64":True,
+                        "SVM RBF Regression 1.28":True,
+                        "SVM RBF Regression 2.56":True,
+                        "SVM RBF Regression 5.12":True,
+                        "SVM RBF Regression 10.24":True,
+                        "SVM Polynomial Regression 2":True,
+                        "SVM Polynomial Regression 3":True,
+                        "SVM Polynomial Regression 4":True,
+                        "SVM Polynomial Regression 5":True,
                         "Ridge Regression":False,
                         "Logistic Regression": True,
                         "Neural Network":True,
