@@ -73,11 +73,11 @@ OLD_PRED_ALGORITHM_ARRAY = np.array([])
 PLOT_LOMB_ARRAY = np.array([])
 
 #Boolean to show the prediction plot versus the actual bg
-SHOW_PRED_PLOT = True
+SHOW_PRED_PLOT = False
 #Boolean to save the prediction plot
 SAVE_PRED_PLOT = False
 #Boolean to show the Clarke Error Grid plot
-SHOW_CLARKE_PLOT = True
+SHOW_CLARKE_PLOT = False
 #Boolean to save the Clarke Error Grid plot
 SAVE_CLARKE_PLOT = False
 
@@ -183,8 +183,8 @@ def main():
                 #Analyze ml algorithms
                 for algorithm_string in ALGORITHM_ARRAY:
                     print "            Algorithm: " + algorithm_string
-                    train_data_matrix = make_data_matrix(bg_df, train_lomb_data, start_train_index, end_train_index, data_minutes, pred_minutes)
-                    test_data_matrix = make_data_matrix(bg_df, test_lomb_data, start_test_index, end_test_index, data_minutes, pred_minutes)
+                    train_data_matrix, actual_bg_train_array = make_data_matrix(bg_df, train_lomb_data, start_train_index, end_train_index, data_minutes, pred_minutes)
+                    test_data_matrix, actual_bg_test_array = make_data_matrix(bg_df, test_lomb_data, start_test_index, end_test_index, data_minutes, pred_minutes)
 
                     bg_prediction = apply_algorithm(ALGORITHM_DICT[algorithm_string], ALGORITHM_TRANSFORM[algorithm_string],
                                                     train_data_matrix, test_data_matrix, actual_bg_train_array, actual_bg_test_array)
