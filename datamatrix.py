@@ -55,12 +55,8 @@ def _make_actual_bg_array(bg_df, start_index, end_index, prediction_start_time):
                     actual_bg_array[array_index] = bg_df.iloc[df_index]['openaps']['enacted']['bg']
                     array_index += 1
                 except:
-                    try:
-                        actual_bg_array[array_index] = bg_df.iloc[df_index]['loop']['predicted']['values'][0]
-                        array_index += 1
-                    except:
-                        #If a miss, don't move to the next index and instead add one to the number missed
-                        miss += 1
+                    #If a miss, don't move to the next index and instead add one to the number missed
+                    miss += 1
         else:
             miss += 1
 

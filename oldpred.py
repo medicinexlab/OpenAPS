@@ -83,11 +83,7 @@ def _get_other_bg(bg_df, pred_array, pred_time_array, curr, miss, start_index, d
             curr += 1
 
         except:
-            try:
-                pred_array[curr] = bg_df.iloc[data_index]['loop']['predicted']['values'][pred_array_index]
-                curr += 1
-            except:
-                miss += 1
+            miss += 1
 
     return pred_array, pred_time_array, curr, miss
 

@@ -96,13 +96,10 @@ def _fill_data_gaps(old_time, new_time, old_value, new_value, time_array, value_
 
 
 #Helper for the _make_data_array. It allows you to choose which Column One and Column Two Names you want
-def _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, col_one_name, col_two_name, item_string, is_bg):
+def _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, col_one_name, col_two_name, item_string):
     new_time = (bg_df.iloc[index]['created_at'] - bg_df.iloc[start_index]['created_at']) / np.timedelta64(1, 'm')
-    if is_bg:
-        #If is_bg is true, it will access the BGvalue
-        new_value = bg_df.iloc[index]['loop']['predicted']['values'][0]
-    else:
-        new_value = bg_df.iloc[index][col_one_name][col_two_name][item_string]
+
+    new_value = bg_df.iloc[index][col_one_name][col_two_name][item_string]
     old_time = time_array[last]
     old_value = value_array[last]
 
@@ -126,20 +123,15 @@ def _make_data_array(bg_df, start_index, end_index, item_string):
         curr = last = num_extra_added = miss = 0
 
         for index in range(start_index, end_index - 1, -1):
-            is_bg = False
             try:
-                time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, 'openaps', 'suggested', item_string, is_bg)
+                time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, 'openaps', 'suggested', item_string)
             except:
-                try:
-                    time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, 'openaps', 'enacted', item_string, is_bg)
 
+                try:
+                    time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, 'openaps', 'enacted', item_string)
                 except:
-                    try:
-                        if item_string == 'bg': is_bg = True
-                        time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, 'loop', item_string.lower(), item_string.lower(), is_bg)
-                    except:
-                        #count the number of misses
-                        miss += 1
+                    #count the number of misses
+                    miss += 1
 
         #Check to see if the number added exceeds EXTRA_SPACE. If it does, raise exception and change it in the global variables above
         if num_extra_added > EXTRA_SPACE:
