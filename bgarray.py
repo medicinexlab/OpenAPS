@@ -124,11 +124,11 @@ def _make_data_array(bg_df, start_index, end_index, item_string):
 
         for index in range(start_index, end_index - 1, -1):
             try:
-                time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, 'openaps', 'suggested', item_string)
+                time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, 'openaps', 'enacted', item_string)
             except:
 
                 try:
-                    time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, 'openaps', 'enacted', item_string)
+                    time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, 'openaps', 'suggested', item_string)
                 except:
                     #count the number of misses
                     miss += 1

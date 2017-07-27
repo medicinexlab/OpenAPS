@@ -74,12 +74,12 @@ def _get_other_bg(bg_df, pred_array, pred_time_array, curr, miss, start_index, d
     pred_time_array[curr] = (bg_df.iloc[data_index]['created_at'] - bg_df.iloc[start_index]['created_at']) / np.timedelta64(1, 'm')
 
     try:
-        pred_array[curr] = bg_df.iloc[data_index]['openaps']['suggested'][bg_string]
+        pred_array[curr] = bg_df.iloc[data_index]['openaps']['enacted'][bg_string]
         curr += 1
 
     except:
         try:
-            pred_array[curr] = bg_df.iloc[data_index]['openaps']['enacted'][bg_string]
+            pred_array[curr] = bg_df.iloc[data_index]['openaps']['suggested'][bg_string]
             curr += 1
 
         except:
@@ -93,12 +93,12 @@ def _get_named_pred(bg_df, pred_array, pred_time_array, curr, miss, start_index,
     pred_time_array[curr] = (bg_df.iloc[data_index]['created_at'] - bg_df.iloc[start_index]['created_at']) / np.timedelta64(1, 'm')
 
     try:
-        pred_array[curr] = bg_df.iloc[data_index]['openaps']['suggested']['predBGs'][pred_string][pred_array_index]
+        pred_array[curr] = bg_df.iloc[data_index]['openaps']['enacted']['predBGs'][pred_string][pred_array_index]
         curr += 1
 
     except:
         try:
-            pred_array[curr] = bg_df.iloc[data_index]['openaps']['enacted']['predBGs'][pred_string][pred_array_index]
+            pred_array[curr] = bg_df.iloc[data_index]['openaps']['suggested']['predBGs'][pred_string][pred_array_index]
             curr += 1
 
         except:
