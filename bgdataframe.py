@@ -43,13 +43,11 @@ def _get_file(id_string):
 
 
 #Function to read in the start and end date according to year-month-day format
-def _get_date(start_train_string, end_train_string, start_test_string, end_test_string):
-    start_train_date = pd.to_datetime(start_train_string, format='%Y-%m-%d')
-    end_train_date = pd.to_datetime(end_train_string, format='%Y-%m-%d')
-    start_test_date = pd.to_datetime(start_test_string, format='%Y-%m-%d')
-    end_test_date = pd.to_datetime(end_test_string, format='%Y-%m-%d')
+def _get_date(start_string, end_string):
+    start_date = pd.to_datetime(start_string, format='%Y-%m-%d')
+    end_date = pd.to_datetime(end_string, format='%Y-%m-%d')
 
-    return start_train_date, end_train_date, start_test_date, end_test_date
+    return start_date, end_date
 
 
 #Function to find the start and stop indices for both the train and test dates
@@ -71,8 +69,8 @@ def _find_index(bg_df, start_date, end_date, make_col):
 def get_bg_data(id_string, start_train_string, end_train_string, start_test_string, end_test_string):
     bg_df = _get_file(id_string)
 
-
-    start_train_date, end_train_date, start_test_date, end_test_date = _get_date(start_train_string, end_train_string, start_test_string, end_test_string)
+    start_train_date, end_train_date = _get_date(start_train_string, end_train_string)
+    start_test_date, end_test_date = _get_date(start_test_string, end_test_string)
 
     start_train_index, end_train_index = _find_index(bg_df, start_train_date, end_train_date, True)
     start_test_index, end_test_index = _find_index(bg_df, start_test_date, end_test_date, False)

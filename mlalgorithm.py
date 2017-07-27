@@ -4,7 +4,7 @@ This file contins the apply_algorithm and analyze_data functions for the OpenAPS
 
 
 Main Function:
-        analyze_data(actual_bg_test_array, bg_prediction, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_string, algorithm_string, minutes_string):
+        analyze_ml_data(actual_bg_test_array, bg_prediction, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_string, algorithm_string, minutes_string):
 Input:
         actual_bg_test_array            The array of actual test bg values.
         bg_prediction                   The array of prediction bg values.
@@ -17,7 +17,7 @@ Input:
         minutes_string                  String with the data minutes and prediction minutes.
 
 USAGE:
-        analyze_data(actual_bg_test_array, bg_prediction, True, False, True, False, "00897741", "Linear Regression", "Data120Pred30")
+        analyze_ml_data(actual_bg_test_array, bg_prediction, True, False, True, False, "00897741", "Linear Regression", "Pred30Data120")
 
 
 
@@ -53,7 +53,7 @@ import ClarkeErrorGrid
 
 
 #This functions analyzes the data from actual_bg_test_array and the bg_prediction array
-def analyze_data(actual_bg_test_array, bg_prediction, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_string, algorithm_string, minutes_string):
+def analyze_ml_data(actual_bg_test_array, bg_prediction, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_string, algorithm_string, minutes_string):
     #Root mean squared error
     rms = math.sqrt(mean_squared_error(actual_bg_test_array, bg_prediction))
     print "                Root Mean Squared Error: " + str(rms)

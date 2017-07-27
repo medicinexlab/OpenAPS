@@ -36,16 +36,17 @@ Trevor Tsue
 2017-7-24
 '''
 
-
+from collections import namedtuple
 from bgdataframe import get_bg_data
 from bgarray import get_bg_array
-from collections import namedtuple
 from datamatrix import make_data_matrix
+from oldpred import get_old_pred
+from oldpred import analyze_old_pred_data
+from mlalgorithm import *
 from sklearn import linear_model
 from sklearn import kernel_ridge
 from sklearn import svm
 from sklearn import neural_network
-from mlalgorithm import *
 
 
 
@@ -59,6 +60,10 @@ DATA_MINUTES_ARRAY = np.array([1,15,30,45,60,75,90,105,120])
 PRED_MINUTES_ARRAY = np.array([30])
 #Array of the algorithms that will be tested.
 ALGORITHM_ARRAY = np.array(["Neural Network"])
+#Choose whether to run 'eventualBG', 'iob', 'cob', 'acob'
+#e.g. ['iob', 'acob']
+#Leave empty to run none
+OLD_PRED_ALGORITHM_ARRAY = np.array([])
 
 
 #PLOTTING CONSTANTS
@@ -68,11 +73,11 @@ ALGORITHM_ARRAY = np.array(["Neural Network"])
 PLOT_LOMB_ARRAY = np.array([])
 
 #Boolean to show the prediction plot versus the actual bg
-SHOW_PRED_PLOT = False
+SHOW_PRED_PLOT = True
 #Boolean to save the prediction plot
 SAVE_PRED_PLOT = False
 #Boolean to show the Clarke Error Grid plot
-SHOW_CLARKE_PLOT = False
+SHOW_CLARKE_PLOT = True
 #Boolean to save the Clarke Error Grid plot
 SAVE_CLARKE_PLOT = False
 
@@ -160,20 +165,32 @@ def main():
         bg_df, start_train_index, end_train_index, start_test_index, end_test_index = get_bg_data(id_string, start_train_string, end_train_string, start_test_string, end_test_string)
         train_lomb_data, test_lomb_data = get_bg_array(bg_df, start_train_index, end_train_index, start_test_index, end_test_index, PLOT_LOMB_ARRAY)
 
-        for data_minutes in DATA_MINUTES_ARRAY:
-            print "    Data Minutes: " + str(data_minutes)
-            for pred_minutes in PRED_MINUTES_ARRAY:
-                print "        Prediction Minutes: " + str(pred_minutes)
+        for pred_minutes in PRED_MINUTES_ARRAY:
+            print "    Prediction Minutes: " + str(pred_minutes)
+
+            #Analyze old pred methods
+            if len(OLD_PRED_ALGORITHM_ARRAY) != 0:
+                if pred_minutes % 5 != 0: raise Exception("The prediction minutes is not a multiple of 5.")
+                eventual_pred_data, iob_pred_data, cob_pred_data, acob_pred_data = get_old_pred(bg_df, start_test_index, end_test_index, pred_minutes)
+                if 'eventualBG' in OLD_PRED_ALGORITHM_ARRAY: analyze_old_pred_data(eventual_pred_data, SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_string, "eventualBG", "Pred" + str(pred_minutes))
+                if 'iob' in OLD_PRED_ALGORITHM_ARRAY: analyze_old_pred_data(iob_pred_data, SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_string, "IOB", "Pred" + str(pred_minutes))
+                if 'cob' in OLD_PRED_ALGORITHM_ARRAY: analyze_old_pred_data(cob_pred_data, SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_string, "COB", "Pred" + str(pred_minutes))
+                if 'acob' in OLD_PRED_ALGORITHM_ARRAY: analyze_old_pred_data(acob_pred_data, SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_string, "aCOB", "Pred" + str(pred_minutes))
+
+            for data_minutes in DATA_MINUTES_ARRAY:
+                print "        Data Minutes: " + str(data_minutes)
+
+                #Analyze ml algorithms
                 for algorithm_string in ALGORITHM_ARRAY:
                     print "            Algorithm: " + algorithm_string
-                    train_data_matrix, actual_bg_train_array = make_data_matrix(bg_df, train_lomb_data, start_train_index, end_train_index, data_minutes, pred_minutes)
-                    test_data_matrix, actual_bg_test_array = make_data_matrix(bg_df, test_lomb_data, start_test_index, end_test_index, data_minutes, pred_minutes)
+                    train_data_matrix = make_data_matrix(bg_df, train_lomb_data, start_train_index, end_train_index, data_minutes, pred_minutes)
+                    test_data_matrix = make_data_matrix(bg_df, test_lomb_data, start_test_index, end_test_index, data_minutes, pred_minutes)
 
                     bg_prediction = apply_algorithm(ALGORITHM_DICT[algorithm_string], ALGORITHM_TRANSFORM[algorithm_string],
                                                     train_data_matrix, test_data_matrix, actual_bg_train_array, actual_bg_test_array)
 
-                    analyze_data(actual_bg_test_array, bg_prediction, SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_string, algorithm_string,
-                                    "Data" + str(data_minutes) + "Pred" + str(pred_minutes))
+                    analyze_ml_data(actual_bg_test_array, bg_prediction, SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_string, algorithm_string,
+                                    "Pred" + str(pred_minutes) + "Data" + str(data_minutes))
 
 
 #Run the main function

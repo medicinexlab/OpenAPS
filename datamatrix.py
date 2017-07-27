@@ -71,21 +71,21 @@ def _make_actual_bg_array(bg_df, start_index, end_index, prediction_start_time):
     return time_bg_array, actual_bg_array
 
 
-#This function takes in the data arrays for BG time, actual BG, and lomb_data (timeValue, BG, IOB, and COB) and fills in and returns the data training matrix.
-#It creates vectors with NUM_DATA_MINUTES of time, BG, IOB, and COB on each row, starting with the current time on the top.
+#This function takes in the data arrays for BG time and lomb_data namedtuple (timeValue, BG, IOB, and COB) and fills in and returns the data training matrix.
+#It creates vectors with num_data_minutes of time, BG, IOB, and COB on each row, starting with the current time on the top.
 #Each row is a different current time, with the earliest current time on the bottom.
 #You can use either training or testing arrays.
-def _fill_matrix(time_bg_array, actual_bg_array, lomb_data, num_data_minutes, num_pred_minutes):
-    #The total number of r in the data_matrix. It will be the length of the actual_bg_array. We will find
+def _fill_matrix(time_bg_array, lomb_data, num_data_minutes, num_pred_minutes):
+    #The total number of r in the data_matrix. It will be the length of the time_bg_array. We will find
     #the times and values of the actual BGs and compare our predictions to these actual values.
-    num_data_time_rows = len(actual_bg_array)
+    num_data_time_rows = len(time_bg_array)
     num_data_cols = NUM_DATA_ELEMENTS * num_data_minutes
 
     #data_matrix[row,col]
     data_matrix = np.zeros((num_data_time_rows, num_data_cols))
 
     for row_index in range(num_data_time_rows):
-        #The index of the arrays. Need to find the time of the actual_bg_array and then subtract by num_pred_minutes to find the first entry of the data that we will use to make the prediction
+        #The index of the arrays. Need to find the time of the time_bg_array and then subtract by num_pred_minutes to find the first entry of the data that we will use to make the prediction
         #Needs to be a WHOLE minute, not any decimals, so convert to an integer
         overall_data_index = int(time_bg_array[row_index]) - num_pred_minutes
 
@@ -106,6 +106,6 @@ def make_data_matrix(bg_df, lomb_data, start_index, end_index, num_data_minutes,
     prediction_start_time = num_data_minutes + num_pred_minutes - 1
 
     time_bg_array, actual_bg_array = _make_actual_bg_array(bg_df, start_index, end_index, prediction_start_time)
-    data_matrix = _fill_matrix(time_bg_array, actual_bg_array, lomb_data, num_data_minutes, num_pred_minutes)
+    data_matrix = _fill_matrix(time_bg_array, lomb_data, num_data_minutes, num_pred_minutes)
 
     return data_matrix, actual_bg_array
