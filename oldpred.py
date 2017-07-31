@@ -23,7 +23,7 @@ USAGE:
 
 
 Main Function:
-        analyze_old_pred_data(old_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_string, algorithm_string, minutes_string)
+        analyze_old_pred_data(old_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, algorithm_str, minutes_str)
 
 Input:
         old_pred_data                   The namedtuple with ['result_actual_bg_array', 'result_actual_bg_time_array', 'result_pred_array', 'result_pred_time_array']
@@ -31,9 +31,9 @@ Input:
         save_pred_plot                  Boolean to save the plot of prediction and actual bg values
         show_clarke_plot                Boolean to show the Clarke Error Grid plot.
         save_clarke_plot                Boolean to save the Clarke Error Grid plot.
-        id_string                       String of the ID number.
-        algorithm_string                String of the algorithm name.
-        minutes_string                  String with the prediction minutes.
+        id_str                          String of the ID number.
+        algorithm_str                   String of the algorithm name.
+        minutes_str                     String with the prediction minutes.
 
 USAGE:
         analyze_old_pred_data(old_pred_data, True, False, True, False, "00897741", "Linear Regression", "Pred30")
@@ -70,16 +70,16 @@ def _new_pred_array(start_index, end_index, total_len):
 
 #Function to get the eventualBG and actual BG. The predicted array index is 0 for the actual current BG
 #and NUM_PRED_SECTIONS for the eventualBG
-def _get_other_bg(bg_df, pred_array, pred_time_array, curr, miss, start_index, data_index, bg_string, pred_array_index):
+def _get_other_bg(bg_df, pred_array, pred_time_array, curr, miss, start_index, data_index, bg_str, pred_array_index):
     pred_time_array[curr] = (bg_df.iloc[data_index]['created_at'] - bg_df.iloc[start_index]['created_at']) / np.timedelta64(1, 'm')
 
     try:
-        pred_array[curr] = bg_df.iloc[data_index]['openaps']['enacted'][bg_string]
+        pred_array[curr] = bg_df.iloc[data_index]['openaps']['enacted'][bg_str]
         curr += 1
 
     except:
         try:
-            pred_array[curr] = bg_df.iloc[data_index]['openaps']['suggested'][bg_string]
+            pred_array[curr] = bg_df.iloc[data_index]['openaps']['suggested'][bg_str]
             curr += 1
 
         except:
@@ -89,16 +89,16 @@ def _get_other_bg(bg_df, pred_array, pred_time_array, curr, miss, start_index, d
 
 
 #Function to get the predicted bg for the IOB, COB, and aCOB predictions
-def _get_named_pred(bg_df, pred_array, pred_time_array, curr, miss, start_index, data_index, pred_string, pred_array_index):
+def _get_named_pred(bg_df, pred_array, pred_time_array, curr, miss, start_index, data_index, pred_str, pred_array_index):
     pred_time_array[curr] = (bg_df.iloc[data_index]['created_at'] - bg_df.iloc[start_index]['created_at']) / np.timedelta64(1, 'm')
 
     try:
-        pred_array[curr] = bg_df.iloc[data_index]['openaps']['enacted']['predBGs'][pred_string][pred_array_index]
+        pred_array[curr] = bg_df.iloc[data_index]['openaps']['enacted']['predBGs'][pred_str][pred_array_index]
         curr += 1
 
     except:
         try:
-            pred_array[curr] = bg_df.iloc[data_index]['openaps']['suggested']['predBGs'][pred_string][pred_array_index]
+            pred_array[curr] = bg_df.iloc[data_index]['openaps']['suggested']['predBGs'][pred_str][pred_array_index]
             curr += 1
 
         except:
@@ -213,7 +213,7 @@ def get_old_pred(bg_df, start_index, end_index, num_pred_minutes):
 
 
 #Plots old pred data
-def analyze_old_pred_data(old_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_string, algorithm_string, minutes_string):
+def analyze_old_pred_data(old_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, algorithm_str, minutes_str):
     actual_bg_array = old_pred_data.result_actual_bg_array
     actual_bg_time_array = old_pred_data.result_actual_bg_time_array
     pred_array = old_pred_data.result_pred_array
@@ -223,19 +223,19 @@ def analyze_old_pred_data(old_pred_data, show_pred_plot, save_pred_plot, show_cl
     rms = math.sqrt(mean_squared_error(actual_bg_array, pred_array))
     print "                Root Mean Squared Error: " + str(rms)
 
-    plot, zone = ClarkeErrorGrid.clarke_error_grid(actual_bg_array, pred_array, id_string + " " + algorithm_string)
+    plot, zone = ClarkeErrorGrid.clarke_error_grid(actual_bg_array, pred_array, id_str + " " + algorithm_str)
     print "                Zones are A:{}, B:{}, C:{}, D:{}, E:{}\n".format(zone[0],zone[1],zone[2],zone[3],zone[4])
-    if save_clarke_plot: plt.savefig(id_string + algorithm_string.replace(" ", "") + minutes_string + "clarke.png")
+    if save_clarke_plot: plt.savefig(id_str + algorithm_str.replace(" ", "") + minutes_str + "clarke.png")
     if show_clarke_plot: plot.show()
 
     plt.clf()
     plt.plot(pred_time_array, pred_array, label="BG Prediction")
     plt.plot(actual_bg_time_array, actual_bg_array, label="Actual BG")
-    plt.title(id_string + " " + algorithm_string + " BG Analysis")
+    plt.title(id_str + " " + algorithm_str + " BG Analysis")
     plt.ylabel("Blood Glucose Level (mg/dl)")
     plt.xlabel("Time (minutes)")
     plt.legend(loc='upper left')
 
     # SHOW/SAVE PLOT DEPENDING ON THE BOOLEAN PARAMETER
-    if save_pred_plot: plt.savefig(id_string + algorithm_string.replace(" ","") + minutes_string + "plot.png")
+    if save_pred_plot: plt.savefig(id_str + algorithm_str.replace(" ","") + minutes_str + "plot.png")
     if show_pred_plot: plt.show()

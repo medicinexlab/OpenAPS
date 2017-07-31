@@ -4,12 +4,14 @@ This file contains the functions to take the start and end indices of training a
 lomb-scargle model of the data.
 
 Main Function:
-        get_bg_array(bg_df, start_train_index, end_train_index, start_test_index, end_test_index, plot_lomb_array)
+        get_bg_array(bg_df, start_train_index, end_train_index, start_valid_index, end_valid_index, start_test_index, end_test_index, plot_lomb_array)
 
 Input:
-        bg_df                           Pandas dataframe of all of the data from /data/[id_string]/devicestatus.json
+        bg_df                           Pandas dataframe of all of the data from /data/[id_str]/devicestatus.json
         start_train_index               Index of the start of training
-        end_train_index                 Index of the end of testing (inclusive)
+        end_train_index                 Index of the end of training (inclusive)
+        start_valid_index               Index of the start of validation
+        end_valid_index                 Index of the end of validation (inclusive)
         start_test_index                Index of the start of testing
         end_test_index                  Index of the end of testing (inclusive)
         plot_lomb_array                 This is the array/list that will plot the lomb scargle data
@@ -19,11 +21,13 @@ Input:
 Output:
         train_lomb_data                 This namedtuple struct contains the period, bg_lomb, iob_lomb, cob_lomb,
                                         and time_value_array for the training data
+        valid_lomb_data                 This namedtuple struct contains the period, bg_lomb, iob_lomb, cob_lomb,
+                                        and time_value_array for the validation data
         test_lomb_data                  This namedtuple struct contains the period, bg_lomb, iob_lomb, cob_lomb,
                                         and time_value_array for the testing data
 
 USAGE:
-    train_lomb_data, test_lomb_data = get_bg_array(bg_df, start_train_index, end_train_index, start_test_index, end_test_index, PLOT_LOMB_ARRAY)
+    train_lomb_data, valid_lomb_data, test_lomb_data = get_bg_array(bg_df, start_train_index, end_train_index, start_valid_index, end_valid_index, start_test_index, end_test_index, [0,1])
 
 Trevor Tsue
 2017-7-24
@@ -57,7 +61,8 @@ COB_NUM_FOURIER_SERIES = 100
 #the time in minutes in a day as defined from 0 to 1,439
 def _timestamp_function(time):
     minutes_in_hour = 60
-    return (time.hour * minutes_in_hour) + time.minute
+    # return (time.hour * minutes_in_hour) + time.minute
+    return abs(2*(time.hour % 12) - time.hour)
 
 
 #Returns the the time_value_array (the array of the exact minute of the day for each entry that will be used for the vectors)
@@ -65,12 +70,16 @@ def _make_time_value_array(bg_df, start_index, end_index):
     min_in_day = 1440
     array_len = int((bg_df.iloc[end_index]['created_at'] - bg_df.iloc[start_index]['created_at']) / np.timedelta64(1, 'm')) + 1
     time_value_array = np.zeros(array_len)
-
-    #First entry is the minute of the start_index
-    time_value_array[0] = _timestamp_function(bg_df.iloc[start_index]['created_at'])
-    for index in range(array_len - 1):
-        #Since everything is spaced out by minutes, everything entry is a minute later than the previous
-        time_value_array[index + 1] = (time_value_array[index] + 1) % min_in_day
+    #
+    # #First entry is the minute of the start_index
+    # time_value_array[0] = _timestamp_function(bg_df.iloc[start_index]['created_at'])
+    # for index in range(array_len - 1):
+    #     #Since everything is spaced out by minutes, everything entry is a minute later than the previous
+    #     time_value_array[index + 1] = (time_value_array[index] + 1) % min_in_day
+    #
+    for df_index, array_index in zip(range(start_index, end_index -1, -1), range(array_len)):
+        time_value_array[array_index] = _timestamp_function(bg_df.iloc[df_index]['created_at'])
+        # print time_value_array[index]
 
     return time_value_array
 
@@ -96,10 +105,10 @@ def _fill_data_gaps(old_time, new_time, old_value, new_value, time_array, value_
 
 
 #Helper for the _make_data_array. It allows you to choose which Column One and Column Two Names you want
-def _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, col_one_name, col_two_name, item_string):
+def _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, col_one_name, col_two_name, item_str):
     new_time = (bg_df.iloc[index]['created_at'] - bg_df.iloc[start_index]['created_at']) / np.timedelta64(1, 'm')
 
-    new_value = bg_df.iloc[index][col_one_name][col_two_name][item_string]
+    new_value = bg_df.iloc[index][col_one_name][col_two_name][item_str]
     old_time = time_array[last]
     old_value = value_array[last]
 
@@ -114,9 +123,9 @@ def _make_data_array_helper(bg_df, time_array, value_array, start_index, index, 
     return time_array, value_array, curr, last, num_extra_added
 
 
-#Function to make the data array for lomb-scargle given the bg_df dataframe, the start_index, the end_index, and the item_string, which is the column that you want to get
+#Function to make the data array for lomb-scargle given the bg_df dataframe, the start_index, the end_index, and the item_str, which is the column that you want to get
 #Can put any start and end index as a parameter
-def _make_data_array(bg_df, start_index, end_index, item_string):
+def _make_data_array(bg_df, start_index, end_index, item_str):
         total_len = start_index - end_index + EXTRA_SPACE + 1
         time_array = np.zeros(total_len)
         value_array = np.zeros(total_len)
@@ -124,11 +133,11 @@ def _make_data_array(bg_df, start_index, end_index, item_string):
 
         for index in range(start_index, end_index - 1, -1):
             try:
-                time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, 'openaps', 'enacted', item_string)
+                time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, 'openaps', 'enacted', item_str)
             except:
 
                 try:
-                    time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, 'openaps', 'suggested', item_string)
+                    time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, 'openaps', 'suggested', item_str)
                 except:
                     #count the number of misses
                     miss += 1
@@ -154,9 +163,9 @@ def _run_lomb_scargle(time_array, value_array, period, num_fourier_terms):
 
 
 #Plot lomb scargle function
-def _plot_lomb(period, lomb, time_array, value_array, name_string):
-    plt.plot(period, lomb, label='Lomb '+name_string)
-    plt.plot(time_array, value_array, label='Actual '+name_string)
+def _plot_lomb(period, lomb, time_array, value_array, name_str):
+    plt.plot(period, lomb, label='Lomb ' + name_str)
+    plt.plot(time_array, value_array, label='Actual ' + name_str)
 
 
 #This function gets the data from the lomb scargle. It takes in the start and end indices and returns a lomb scargle model for BG, IOB, and COB as well as the period
@@ -188,15 +197,18 @@ def _get_lomb_scargle(bg_df, start_index, end_index, plot_lomb_array):
 
 #The main function to be called to get the bg data arrays
 #It applies the lomb scargle periodogram to make a model of the data, and returns this model as an array
-def get_bg_array(bg_df, start_train_index, end_train_index, start_test_index, end_test_index, plot_lomb_array):
+def get_bg_array(bg_df, start_train_index, end_train_index, start_valid_index, end_valid_index, start_test_index, end_test_index, plot_lomb_array):
     time_value_train_array = _make_time_value_array(bg_df, start_train_index, end_train_index)
+    time_value_valid_array = _make_time_value_array(bg_df, start_valid_index, end_valid_index)
     time_value_test_array = _make_time_value_array(bg_df, start_test_index, end_test_index)
 
     train_period, bg_train_lomb, iob_train_lomb, cob_train_lomb = _get_lomb_scargle(bg_df, start_train_index, end_train_index, plot_lomb_array)
+    valid_period, bg_valid_lomb, iob_valid_lomb, cob_valid_lomb = _get_lomb_scargle(bg_df, start_valid_index, end_valid_index,plot_lomb_array)
     test_period, bg_test_lomb, iob_test_lomb, cob_test_lomb = _get_lomb_scargle(bg_df, start_test_index, end_test_index, plot_lomb_array)
 
     LombData = namedtuple('LombData', ['period', 'bg_lomb', 'iob_lomb', 'cob_lomb', 'time_value_array'])
     train_lomb_data = LombData(train_period, bg_train_lomb, iob_train_lomb, cob_train_lomb, time_value_train_array)
+    valid_lomb_data = LombData(valid_period, bg_valid_lomb, iob_valid_lomb, cob_valid_lomb, time_value_valid_array)
     test_lomb_data = LombData(test_period, bg_test_lomb, iob_test_lomb, cob_test_lomb, time_value_test_array)
 
-    return train_lomb_data, test_lomb_data
+    return train_lomb_data, valid_lomb_data, test_lomb_data
