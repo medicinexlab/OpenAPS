@@ -1,22 +1,11 @@
-# OpenAPS
-This repository holds the prediction algorithms for OpenAPS.
+# Predicting BG using various algorithms 
+This repository holds various prediction algorithms for BG, using data from the OpenAPS Data Commons (which comes from Nightscout), with the intention to compare these algorithms to existing in-use prediction algorithms in the open source diabetes community. 
 
 The OpenAPS data must be in a subdirectory called "data" with a subdirectory of
 the ID number that contains the devicestatus.json file. For example:
 
-        ./data/00897741/devicestatus.json
-        ./data/01352464/devicestatus.json
-        ./data/01884126/devicestatus.json
-        ./data/14092221/devicestatus.json
-        ./data/15634563/devicestatus.json
-        ./data/17161370/devicestatus.json
-        ./data/24587372/devicestatus.json
-        ./data/40997757/devicestatus.json
-        ./data/41663654/devicestatus.json
-        ./data/45025419/devicestatus.json
-        ./data/46966807/devicestatus.json
-        ./data/68267781/devicestatus.json
-        ./data/84984656/devicestatus.json
+        ./data/12345678/devicestatus.json
+
 where . represents the current directory with the code
 
 The code requires the following files:
@@ -40,6 +29,3 @@ Once all of these have been satsified, you can run the code with the following c
         python main.py
 
 
-Trevor Tsue
-
-2017-7-24
