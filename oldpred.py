@@ -36,7 +36,7 @@ Input:
         minutes_str                     String with the prediction minutes.
 
 USAGE:
-        analyze_old_pred_data(old_pred_data, True, False, True, False, "00897741", "Linear Regression", "Pred30")
+        analyze_old_pred_data(old_pred_data, True, False, True, False, "00000001", "Linear Regression", "Pred30")
 
 Trevor Tsue
 2017-7-26

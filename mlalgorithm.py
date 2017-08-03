@@ -17,7 +17,7 @@ Input:
         minutes_str                     String with the data minutes and prediction minutes.
 
 USAGE:
-        analyze_ml_data(actual_bg_test_array, bg_prediction, True, False, True, False, "00897741", "Linear Regression", "Pred30Data120")
+        analyze_ml_data(actual_bg_test_array, bg_prediction, True, False, True, False, "00000001", "Linear Regression", "Pred30Data120")
 
 
 
