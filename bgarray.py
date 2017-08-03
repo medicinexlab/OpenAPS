@@ -164,8 +164,8 @@ def _run_lomb_scargle(time_array, value_array, period, num_fourier_terms):
 
 #Plot lomb scargle function
 def _plot_lomb(period, lomb, time_array, value_array, name_str):
-    plt.plot(period, lomb, label='Lomb ' + name_str)
     plt.plot(time_array, value_array, label='Actual ' + name_str)
+    plt.plot(period, lomb, label='Lomb ' + name_str)
 
 
 #This function gets the data from the lomb scargle. It takes in the start and end indices and returns a lomb scargle model for BG, IOB, and COB as well as the period

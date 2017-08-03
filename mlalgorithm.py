@@ -22,7 +22,7 @@ USAGE:
 
 
 Main Function:
-        
+
 
 Trevor Tsue
 2017-7-24
@@ -51,8 +51,8 @@ def analyze_ml_data(actual_bg_test_array, bg_prediction, show_pred_plot, save_pr
 
     countarray = np.linspace(0, len(actual_bg_test_array) - 1, len(actual_bg_test_array))
     plt.clf()
-    plt.plot(countarray, bg_prediction, label="BG Prediction")
     plt.plot(countarray, actual_bg_test_array, label="Actual BG")
+    plt.plot(countarray, bg_prediction, label="BG Prediction")
     plt.title(id_str + " " + algorithm_str + " BG Analysis")
     plt.ylabel("Blood Glucose Level (mg/dl)")
     plt.xlabel("Time (minutes)")
@@ -66,8 +66,8 @@ def analyze_ml_data(actual_bg_test_array, bg_prediction, show_pred_plot, save_pr
 #Preprocesses the data by the standard scaler relative to the train_data_matrix
 def preprocess_data(train_data_matrix, valid_data_matrix, test_data_matrix):
     reg_scaler = prep.StandardScaler().fit(train_data_matrix)
-    train_data_matrix = reg_scaler.transform(train_data_matrix)
-    valid_data_matrix - reg_scaler.transform(valid_data_matrix)
-    test_data_matrix = reg_scaler.transform(test_data_matrix)
+    transform_train_data_matrix = reg_scaler.transform(train_data_matrix)
+    transform_valid_data_matrix = reg_scaler.transform(valid_data_matrix)
+    transform_test_data_matrix = reg_scaler.transform(test_data_matrix)
 
-    return train_data_matrix, valid_data_matrix, test_data_matrix
+    return transform_train_data_matrix, transform_valid_data_matrix, transform_test_data_matrix

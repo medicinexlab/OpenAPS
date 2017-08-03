@@ -1,6 +1,6 @@
 '''
 oldpred.py
-This file contians the get_old_pred and analyze_old_pred_data functions.
+This file contains the get_old_pred and analyze_old_pred_data functions.
 
 
 Main Function:

@@ -37,8 +37,17 @@ import pandas as pd
 import numpy as np
 
 
-#Function to convert the json file to a dataFrame
 def _get_file(id_str):
+    """
+    Function to convert the json file to a pandas dataframe.
+
+    It takes in the string of the id and looks for the devicestatus.json file.
+    All data should be stored such that in the directory where main.py lies,
+    there is a directory called "data". Inside this directory,
+    there is another directory with just the ID Number. Inside this data folder lies the
+
+    """
+
     try:
         file_location = "data/" + id_str + "/devicestatus.json"
         bg_df = pd.read_json(file_location) #Opens the data file and reads in the data into a dataFrame
