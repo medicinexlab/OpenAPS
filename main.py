@@ -41,7 +41,7 @@ from sklearn import neural_network
 #DATA CONSTANTS MODIFY THESE TO RUN DATA
 
 #Array of the ID to use. Put ID Number as a string (e.g. "00000001")
-ID_ARRAY = np.array(["00000001", "00000003", "00000004", "00000007", "00000010", "00000011"])
+ID_ARRAY = np.array(["00000007"])
 #Array of the data minutes that will be tested. (e.g. [1,15,30,45,60,75,90,105,120])
 DATA_MINUTES_ARRAY = np.array([120])
 #Array of the minutes in the future that the predictions will be made for. (e.g. [1,15,30])
@@ -120,6 +120,9 @@ ALGORITHM_TRANSFORM = {"Linear Regression":False,
                         "MLP Regression":True
                         }
 
+#Prediction CONSTANTS
+MINIMUM_BG = 40
+MAXIMUM_BG = 400
 
 #ID CONSTANTS
 ID_LIST = ["00000001", "00000003", "00000004", "00000007", "00000010", "00000011"]
@@ -234,8 +237,10 @@ def main():
                         reg_model = ALGORITHM_DICT[algorithm_str](parameter_index_keeper)
                         reg_model = reg_model.fit(input_train_data_matrix, actual_bg_train_array) #Fit model to training data
 
-
                         valid_prediction = reg_model.predict(input_valid_data_matrix) #Predict new data
+                        valid_prediction[valid_prediction < 40] = 40 #Set minimum bg level
+                        valid_prediction[valid_prediction > 400] = 400 #Set maximum bg level
+
                         #The cost function is the mean squared error between the prediction and the real value.
                         #We want to use the model that has parameters that lead to the smallest cost function.
                         error_value = mean_squared_error(actual_bg_valid_array, valid_prediction)
@@ -250,6 +255,9 @@ def main():
                     print "                Best Validation Parameter Value: " + str(best_parameter_index_keeper)
                     print "                Best Validation Parameters: " + str(best_reg_model.get_params())
                     test_prediction = best_reg_model.predict(input_test_data_matrix)
+                    test_prediction[test_prediction < MINIMUM_BG] = MINIMUM_BG #Set minimum bg level
+                    test_prediction[test_prediction > MAXIMUM_BG] = MAXIMUM_BG #Set maximum bg level
+
                     analyze_ml_data(actual_bg_test_array, test_prediction, SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_str, algorithm_str,
                                     "Pred" + str(pred_minutes) + "Data" + str(data_minutes))
 

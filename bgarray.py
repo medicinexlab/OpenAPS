@@ -180,9 +180,9 @@ def _get_lomb_scargle(bg_df, start_index, end_index, plot_lomb_array):
         iob_lomb = _run_lomb_scargle(iob_time_array, iob_value_array, period, IOB_NUM_FOURIER_SERIES)
         cob_lomb = _run_lomb_scargle(cob_time_array, cob_value_array, period, COB_NUM_FOURIER_SERIES)
 
-        #Set all values below zero equal to zero (For some reason, IOB is negative in the actual data, so I did not change those values to zero)
+        #Set all bg values below zero equal to zero 
         bg_lomb[bg_lomb < 0] = 0
-        cob_lomb[cob_lomb < 0] = 0
+
 
         if len(plot_lomb_array) > 0:
             plt.clf()
