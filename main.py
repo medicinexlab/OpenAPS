@@ -50,7 +50,7 @@ PRED_MINUTES_ARRAY = np.array([30])
 #Leave empty to run none
 OLD_PRED_ALGORITHM_ARRAY = np.array([])
 #Array of the algorithms that will be tested. (e.g. ["Linear Regression", "Ridge Regression"])
-ALGORITHM_ARRAY = np.array(["Ridge Regression"])
+ALGORITHM_ARRAY = np.array(["Lasso Regression"])
 
 
 
@@ -87,6 +87,11 @@ def ridge_regression_model(parameter_index_keeper):
     alpha_value = PARAMETER_VALUE_ARRAY[int(parameter_str[len(parameter_str) - 1])] #alpha value index is first digit
     return linear_model.Ridge(normalize=True, alpha=alpha_value)
 
+def lasso_regression_model(parameter_index_keeper):
+    parameter_str = str(parameter_index_keeper)
+    alpha_value = PARAMETER_VALUE_ARRAY[int(parameter_str[len(parameter_str) - 1])] #alpha value index is first digit
+    return linear_model.Lasso(normalize=True, alpha=alpha_value)
+
 def svm_linear_regression(parameter_index_keeper):
     parameter_str = str(parameter_index_keeper)
     c_value = PARAMETER_VALUE_ARRAY[int(parameter_str[len(parameter_str) - 1])] #c value index is first digit
@@ -103,12 +108,14 @@ def mlp_regression(parameter_index_keeper):
 #Dictionary with the name of the algorithm as the key and the function as the value
 ALGORITHM_DICT = {"Linear Regression":linear_regression_model,
                     "Ridge Regression":ridge_regression_model,
+                    "Lasso Regression":lasso_regression_model,
                     "SVM Linear Regression":svm_linear_regression,
                     "MLP Regression":mlp_regression
                     }
 
 ALGORITHM_NUM_PARAMETERS = {"Linear Regression":0,
                         "Ridge Regression":1,
+                        "Lasso Regression":1,
                         "SVM Linear Regression":1,
                         "MLP Regression":1
                         }
@@ -116,6 +123,7 @@ ALGORITHM_NUM_PARAMETERS = {"Linear Regression":0,
 #Dictionary with the name of the algorithm as the key and boolean to apply the StandardScaler transformation as the value
 ALGORITHM_TRANSFORM = {"Linear Regression":False,
                         "Ridge Regression":False,
+                        "Lasso Regression":False,
                         "SVM Linear Regression":True,
                         "MLP Regression":True
                         }
