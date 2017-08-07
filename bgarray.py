@@ -57,29 +57,29 @@ COB_NUM_FOURIER_SERIES = 100
 
 
 
-#This function takes in a Timestamp and applies the time function to transform the timestamp from the 24-hour clock to
-#the time in minutes in a day as defined from 0 to 1,439
-def _timestamp_function(time):
-    minutes_in_hour = 60
-    # return (time.hour * minutes_in_hour) + time.minute
-    return abs(2*(time.hour % 12) - time.hour)
+#This function takes in the current hour (ranging from 0-23) and returns the number
+#of hours from midnight (e.g. 1:00 and 23:00 are both 1 hour from midnight 0:00)
+def _get_hours_from_midnight(curr_hour):
+    return abs(2*(curr_hour % 12) - curr_hour)
 
 
 #Returns the the time_value_array (the array of the exact minute of the day for each entry that will be used for the vectors)
 def _make_time_value_array(bg_df, start_index, end_index):
-    min_in_day = 1440
+    min_in_hour = 60
+    hour_in_day = 24
     array_len = int((bg_df.iloc[end_index]['created_at'] - bg_df.iloc[start_index]['created_at']) / np.timedelta64(1, 'm')) + 1
     time_value_array = np.zeros(array_len)
-    #
-    # #First entry is the minute of the start_index
-    # time_value_array[0] = _timestamp_function(bg_df.iloc[start_index]['created_at'])
-    # for index in range(array_len - 1):
-    #     #Since everything is spaced out by minutes, everything entry is a minute later than the previous
-    #     time_value_array[index + 1] = (time_value_array[index] + 1) % min_in_day
-    #
-    for df_index, array_index in zip(range(start_index, end_index -1, -1), range(array_len)):
-        time_value_array[array_index] = _timestamp_function(bg_df.iloc[df_index]['created_at'])
-        # print time_value_array[index]
+
+    curr_minute = bg_df.iloc[start_index]['created_at'].minute
+    curr_hour = bg_df.iloc[start_index]['created_at'].hour
+
+    for array_index in range(array_len):
+        time_value_array[array_index] = _get_hours_from_midnight(curr_hour)
+        curr_minute += 1
+
+        if curr_minute >= min_in_hour:
+            curr_minute = curr_minute % min_in_hour
+            curr_hour = (curr_hour + 1) % hour_in_day
 
     return time_value_array
 
@@ -180,8 +180,9 @@ def _get_lomb_scargle(bg_df, start_index, end_index, plot_lomb_array):
         iob_lomb = _run_lomb_scargle(iob_time_array, iob_value_array, period, IOB_NUM_FOURIER_SERIES)
         cob_lomb = _run_lomb_scargle(cob_time_array, cob_value_array, period, COB_NUM_FOURIER_SERIES)
 
-        #Set all bg values below zero equal to zero 
+        #Set all bg/cob values below zero equal to zero (iob can be negative if it is below baseline levels)
         bg_lomb[bg_lomb < 0] = 0
+        cob_lomb[cob_lomb < 0] = 0
 
 
         if len(plot_lomb_array) > 0:

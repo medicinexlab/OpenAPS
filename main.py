@@ -41,7 +41,7 @@ from sklearn import neural_network
 #DATA CONSTANTS MODIFY THESE TO RUN DATA
 
 #Array of the ID to use. Put ID Number as a string (e.g. "00000001")
-ID_ARRAY = np.array(["00000007"])
+ID_ARRAY = np.array(["00000001", "00000003", "00000004", "00000007", "00000010", "00000011"])
 #Array of the data minutes that will be tested. (e.g. [1,15,30,45,60,75,90,105,120])
 DATA_MINUTES_ARRAY = np.array([120])
 #Array of the minutes in the future that the predictions will be made for. (e.g. [1,15,30])
@@ -50,7 +50,7 @@ PRED_MINUTES_ARRAY = np.array([30])
 #Leave empty to run none
 OLD_PRED_ALGORITHM_ARRAY = np.array([])
 #Array of the algorithms that will be tested. (e.g. ["Linear Regression", "Ridge Regression"])
-ALGORITHM_ARRAY = np.array(["SVM Linear Regression"])
+ALGORITHM_ARRAY = np.array(["Ridge Regression"])
 
 
 
@@ -64,11 +64,11 @@ PLOT_LOMB_ARRAY = np.array([])
 #Boolean to show the prediction plot versus the actual bg
 SHOW_PRED_PLOT = False
 #Boolean to save the prediction plot
-SAVE_PRED_PLOT = True
+SAVE_PRED_PLOT = False
 #Boolean to show the Clarke Error Grid plot
 SHOW_CLARKE_PLOT = False
 #Boolean to save the Clarke Error Grid plot
-SAVE_CLARKE_PLOT = True
+SAVE_CLARKE_PLOT = False
 
 
 
@@ -92,13 +92,13 @@ def svm_linear_regression(parameter_index_keeper):
     c_value = PARAMETER_VALUE_ARRAY[int(parameter_str[len(parameter_str) - 1])] #c value index is first digit
     #Ignore epsilon because it make very little difference
     # epsilon_value = PARAMETER_VALUE_ARRAY[int(parameter_str[len(parameter_str) - 2])] #epsilon value index is second digit
-    return svm.SVR(kernel='linear',C=c_value)
+    return svm.SVR(kernel='linear', C=c_value)
 
 def mlp_regression(parameter_index_keeper):
     parameter_str = str(parameter_index_keeper)
     alpha_value = MLP_PARAMETER_VALUE_ARRAY[int(parameter_str[len(parameter_str) - 1])] #alpha value index is first digit
     # layer_value = MLP_LAYER_ARRAY[int(parameter_str[len(parameter_str) - 1])]
-    return neural_network.MLPRegressor(alpha=alpha_value, hidden_layer_sizes=(100,10))
+    return neural_network.MLPRegressor(solver='sgd', alpha=alpha_value, hidden_layer_sizes=(100,10))
 
 #Dictionary with the name of the algorithm as the key and the function as the value
 ALGORITHM_DICT = {"Linear Regression":linear_regression_model,
@@ -250,6 +250,7 @@ def main():
                             best_error_value = error_value
                             best_reg_model = reg_model
                             best_parameter_index_keeper = parameter_index_keeper
+                        print parameter_index_keeper, math.sqrt(error_value)
 
                     print "                Best Validation RMSE: " + str(math.sqrt(best_error_value))
                     print "                Best Validation Parameter Value: " + str(best_parameter_index_keeper)
