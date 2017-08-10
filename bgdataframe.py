@@ -37,24 +37,6 @@ import pandas as pd
 import numpy as np
 
 
-def _get_file(id_str):
-    """
-    Function to convert the json file to a pandas dataframe.
-
-    It takes in the string of the id and looks for the devicestatus.json file.
-    All data should be stored such that in the directory where main.py lies,
-    there is a directory called "data". Inside this directory,
-    there is another directory with just the ID Number. Inside this data folder lies the
-
-    """
-
-    try:
-        file_location = "data/" + id_str + "/devicestatus.json"
-        bg_df = pd.read_json(file_location) #Opens the data file and reads in the data into a dataFrame
-    except:
-        raise IOError(file_location + " is not a valid file.")
-    return bg_df
-
 
 #Function to read in the start and end date according to year-month-day format
 def _get_date(start_str, end_str):
@@ -81,25 +63,35 @@ def _find_index(bg_df, start_date, end_date, make_col):
 
 #Function to get the bg data
 def get_bg_data(id_str, start_train_str, end_train_str, start_valid_str, end_valid_str, start_test_str, end_test_str):
-    bg_df = _get_file(id_str)
+    """
+    Function to convert the json file to a pandas dataframe.
 
-    start_train_date, end_train_date = _get_date(start_train_str, end_train_str)
-    start_valid_date, end_valid_date = _get_date(start_valid_str, end_valid_str)
-    start_test_date, end_test_date = _get_date(start_test_str, end_test_str)
+    It takes in the string of the id and looks for the devicestatus.json file.
+    All data should be stored such that in the directory where main.py lies,
+    there is a directory called "data". Inside this directory,
+    there is another directory with just the ID Number. Inside this data folder lies the
 
-    start_train_index, end_train_index = _find_index(bg_df, start_train_date, end_train_date, True)
-    start_valid_index, end_valid_index = _find_index(bg_df, start_valid_date, end_valid_date, False)
-    start_test_index, end_test_index = _find_index(bg_df, start_test_date, end_test_date, False)
+    """
+
+    try:
+        file_location = "data/" + id_str + "/devicestatus.json"
+        bg_df = pd.read_json(file_location) #Opens the data file and reads in the data into a dataFrame
+    except:
+        raise IOError(file_location + " is not a valid file.")
 
     print
     print("{} total entries.".format(len(bg_df)))
-    print("Training: {} total entries from {} to {}".format(start_train_index - end_train_index + 1, start_train_date, end_train_date))
-    print("Validation: {} total entries from {} to {}".format(start_valid_index - end_valid_index + 1, start_valid_date, end_valid_date))
-    print("Testing: {} total entries from {} to {}".format(start_test_index - end_test_index + 1, start_test_date, end_test_date))
-    print
-    print("Training Start Index = {} and Training End Index = {}".format(start_train_index, end_train_index))
-    print("Validation Start Index = {} and Validation End Index = {}".format(start_valid_index, end_valid_index))
-    print("Testing Start Index = {} and Testing End Index = {}".format(start_test_index, end_test_index))
+
+    return bg_df
+
+
+#Function to find the indices for the given start and end date strings
+def get_bg_index(bg_df, start_str, end_str, set_str, make_col_bool):
+    start_date, end_date = _get_date(start_str, end_str)
+    start_index, end_index = _find_index(bg_df, start_date, end_date, make_col_bool)
+
+    print("{} Set: {} total entries from {} to {}".format(set_str, start_index - end_index + 1, start_date, end_date))
+    print("{} Set Start Index = {} and {} Set End Index = {}".format(set_str, start_index, set_str, end_index))
     print
 
-    return bg_df, start_train_index, end_train_index, start_valid_index, end_valid_index, start_test_index, end_test_index
+    return start_index, end_index

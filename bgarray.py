@@ -133,14 +133,25 @@ def _make_data_array(bg_df, start_index, end_index, item_str):
 
         for index in range(start_index, end_index - 1, -1):
             try:
-                time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, 'openaps', 'enacted', item_str)
+                time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array,
+                                                                                                start_index, index, curr, last, num_extra_added, 'openaps', 'enacted', item_str)
             except:
 
                 try:
-                    time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, 'openaps', 'suggested', item_str)
+                    time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array,
+                                                                                                    start_index, index, curr, last, num_extra_added, 'openaps', 'suggested', item_str)
                 except:
-                    #count the number of misses
-                    miss += 1
+
+                    if item_str == 'IOB':
+                        #Adds another case for finding IOB
+                        try:
+                            time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array,
+                                                                                                            start_index, index, curr, last, num_extra_added, 'openaps', 'iob', 'iob')
+                        except:
+                            miss += 1
+                    else:
+                        #count the number of misses
+                        miss += 1
 
         #Check to see if the number added exceeds EXTRA_SPACE. If it does, raise exception and change it in the global variables above
         if num_extra_added > EXTRA_SPACE:
@@ -196,20 +207,13 @@ def _get_lomb_scargle(bg_df, start_index, end_index, plot_lomb_array):
         return period, bg_lomb, iob_lomb, cob_lomb
 
 
-#The main function to be called to get the bg data arrays
+#The main function to be called to get the lomb data
 #It applies the lomb scargle periodogram to make a model of the data, and returns this model as an array
-def get_bg_array(bg_df, start_train_index, end_train_index, start_valid_index, end_valid_index, start_test_index, end_test_index, plot_lomb_array):
-    time_value_train_array = _make_time_value_array(bg_df, start_train_index, end_train_index)
-    time_value_valid_array = _make_time_value_array(bg_df, start_valid_index, end_valid_index)
-    time_value_test_array = _make_time_value_array(bg_df, start_test_index, end_test_index)
-
-    train_period, bg_train_lomb, iob_train_lomb, cob_train_lomb = _get_lomb_scargle(bg_df, start_train_index, end_train_index, plot_lomb_array)
-    valid_period, bg_valid_lomb, iob_valid_lomb, cob_valid_lomb = _get_lomb_scargle(bg_df, start_valid_index, end_valid_index,plot_lomb_array)
-    test_period, bg_test_lomb, iob_test_lomb, cob_test_lomb = _get_lomb_scargle(bg_df, start_test_index, end_test_index, plot_lomb_array)
+def get_lomb_data(bg_df, start_index, end_index, plot_lomb_array):
+    time_value_array = _make_time_value_array(bg_df, start_index, end_index)
+    period, bg_lomb, iob_lomb, cob_lomb = _get_lomb_scargle(bg_df, start_index, end_index, plot_lomb_array)
 
     LombData = namedtuple('LombData', ['period', 'bg_lomb', 'iob_lomb', 'cob_lomb', 'time_value_array'])
-    train_lomb_data = LombData(train_period, bg_train_lomb, iob_train_lomb, cob_train_lomb, time_value_train_array)
-    valid_lomb_data = LombData(valid_period, bg_valid_lomb, iob_valid_lomb, cob_valid_lomb, time_value_valid_array)
-    test_lomb_data = LombData(test_period, bg_test_lomb, iob_test_lomb, cob_test_lomb, time_value_test_array)
+    lomb_data = LombData(period, bg_lomb, iob_lomb, cob_lomb, time_value_array)
 
-    return train_lomb_data, valid_lomb_data, test_lomb_data
+    return lomb_data

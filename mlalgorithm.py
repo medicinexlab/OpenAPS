@@ -32,17 +32,18 @@ Trevor Tsue
 import numpy as np
 import matplotlib.pyplot as plt
 import sklearn.preprocessing as prep
-from sklearn.metrics import mean_squared_error
+from sklearn import metrics
 import math
 import ClarkeErrorGrid
-
 
 
 #This functions analyzes the data from actual_bg_test_array and the bg_prediction array
 def analyze_ml_data(actual_bg_test_array, bg_prediction, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, algorithm_str, minutes_str):
     #Root mean squared error
-    rms = math.sqrt(mean_squared_error(actual_bg_test_array, bg_prediction))
+    rms = math.sqrt(metrics.mean_squared_error(actual_bg_test_array, bg_prediction))
     print "                Root Mean Squared Error: " + str(rms)
+    print "                Mean Absolute Error: " + str(metrics.mean_absolute_error(actual_bg_test_array, bg_prediction))
+    print "                R^2 Coefficient of Determination: " + str(metrics.r2_score(actual_bg_test_array, bg_prediction))
 
     plot, zone = ClarkeErrorGrid.clarke_error_grid(actual_bg_test_array, bg_prediction, id_str + " " + algorithm_str)
     print "                Zones are A:{}, B:{}, C:{}, D:{}, E:{}\n".format(zone[0],zone[1],zone[2],zone[3],zone[4])

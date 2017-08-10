@@ -197,7 +197,7 @@ def _find_compare_array(actual_bg_array, actual_bg_time_array, pred_array, pred_
 #The number of minutes in the future that you want to make a prediction for (e.g. make a prediction for 30 minutes in the future).
 
 #It returns the namedtuple with the following attributes ['result_actual_bg_array', 'result_actual_bg_time_array', 'result_pred_array', 'result_pred_time_array']
-def get_old_pred(bg_df, start_index, end_index, num_pred_minutes):
+def _get_old_pred(bg_df, start_index, end_index, num_pred_minutes):
     #The number of 5 minute sections until the prediction (e.g. 30 minutes = 6 sections)
     pred_array_index = num_pred_minutes / DATA_SPACING
 
@@ -211,9 +211,8 @@ def get_old_pred(bg_df, start_index, end_index, num_pred_minutes):
     return eventual_pred_data, iob_pred_data, cob_pred_data, acob_pred_data
 
 
-
 #Plots old pred data
-def analyze_old_pred_data(old_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, algorithm_str, minutes_str):
+def _plot_old_pred_data(old_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, algorithm_str, minutes_str):
     actual_bg_array = old_pred_data.result_actual_bg_array
     actual_bg_time_array = old_pred_data.result_actual_bg_time_array
     pred_array = old_pred_data.result_pred_array
@@ -229,8 +228,8 @@ def analyze_old_pred_data(old_pred_data, show_pred_plot, save_pred_plot, show_cl
     if show_clarke_plot: plot.show()
 
     plt.clf()
-    plt.plot(pred_time_array, pred_array, label="BG Prediction")
     plt.plot(actual_bg_time_array, actual_bg_array, label="Actual BG")
+    plt.plot(pred_time_array, pred_array, label="BG Prediction")
     plt.title(id_str + " " + algorithm_str + " BG Analysis")
     plt.ylabel("Blood Glucose Level (mg/dl)")
     plt.xlabel("Time (minutes)")
@@ -239,3 +238,21 @@ def analyze_old_pred_data(old_pred_data, show_pred_plot, save_pred_plot, show_cl
     # SHOW/SAVE PLOT DEPENDING ON THE BOOLEAN PARAMETER
     if save_pred_plot: plt.savefig(id_str + algorithm_str.replace(" ","") + minutes_str + "plot.png")
     if show_pred_plot: plt.show()
+
+
+#Function to analyze the old OpenAPS data
+def analyze_old_pred_data(bg_df, old_pred_algorithm_array, start_test_index, end_test_index, pred_minutes, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str):
+    if pred_minutes % 5 != 0: raise Exception("The prediction minutes is not a multiple of 5.")
+    eventual_pred_data, iob_pred_data, cob_pred_data, acob_pred_data = _get_old_pred(bg_df, start_test_index, end_test_index, pred_minutes)
+    if 'eventualBG' in old_pred_algorithm_array:
+        print("        eventualBG")
+        _plot_old_pred_data(eventual_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, "eventualBG", "Pred" + str(pred_minutes))
+    if 'iob' in old_pred_algorithm_array:
+        print("        iob")
+        _plot_old_pred_data(iob_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, "IOB", "Pred" + str(pred_minutes))
+    if 'cob' in old_pred_algorithm_array:
+        print("        cob")
+        _plot_old_pred_data(cob_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, "COB", "Pred" + str(pred_minutes))
+    if 'acob' in old_pred_algorithm_array:
+        print("        acob")
+        _plot_old_pred_data(acob_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, "aCOB", "Pred" + str(pred_minutes))
