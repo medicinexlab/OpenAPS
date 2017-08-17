@@ -50,10 +50,8 @@ PERIOD_RANGE_MIN = 5
 PERIOD_RANGE_MAX = 100
 #The first pass coverage number for the lomb scargle
 FIRST_PASS_COVERAGE_NUM = 25
-#The number of fourier series used on the BG, IOB, and COB Lomb-Scargles
-BG_NUM_FOURIER_SERIES = 150
-IOB_NUM_FOURIER_SERIES = 125
-COB_NUM_FOURIER_SERIES = 100
+#This is the maximum data gap. Anything else is removed from the data
+MAX_DATA_GAP_MINUTES = 120
 
 
 
@@ -95,7 +93,7 @@ def _fill_data_gaps(old_time, new_time, old_value, new_value, time_array, value_
         value_array[index] = new_value
         return index + 1
 
-    mid_time = (new_time + old_time) / 2
+    mid_time = int((new_time + old_time) / 2)
     mid_value = (new_value + old_value) / 2
 
     index = _fill_data_gaps(old_time, mid_time, old_value, mid_value, time_array, value_array, index)
@@ -105,12 +103,18 @@ def _fill_data_gaps(old_time, new_time, old_value, new_value, time_array, value_
 
 
 #Helper for the _make_data_array. It allows you to choose which Column One and Column Two Names you want
-def _make_data_array_helper(bg_df, time_array, value_array, start_index, index, curr, last, num_extra_added, col_one_name, col_two_name, item_str):
-    new_time = (bg_df.iloc[index]['created_at'] - bg_df.iloc[start_index]['created_at']) / np.timedelta64(1, 'm')
-
+def _make_data_array_helper(bg_df, time_array, value_array, data_gap_start_time, data_gap_end_time, start_index, index, curr, last, num_extra_added, col_one_name, col_two_name, item_str):
+    new_time = int((bg_df.iloc[index]['created_at'] - bg_df.iloc[start_index]['created_at']) / np.timedelta64(1, 'm'))
     new_value = bg_df.iloc[index][col_one_name][col_two_name][item_str]
     old_time = time_array[last]
     old_value = value_array[last]
+
+    if new_time - old_time > MAX_DATA_GAP_MINUTES:
+        """
+        TODO ADD WAY TO KEEP TRACK OF DATA GAPS FOR LATER REMOVAL
+        """
+        data_gap_start_time.append(old_time)
+        data_gap_end_time.append(new_time)
 
     #keep track of the curr value before passing into _fill_data_gaps
     start_curr = curr
@@ -120,7 +124,7 @@ def _make_data_array_helper(bg_df, time_array, value_array, start_index, index, 
     num_extra_added += curr - start_curr - 1
     last = curr - 1
 
-    return time_array, value_array, curr, last, num_extra_added
+    return time_array, value_array, data_gap_start_time, data_gap_end_time, curr, last, num_extra_added
 
 
 #Function to make the data array for lomb-scargle given the bg_df dataframe, the start_index, the end_index, and the item_str, which is the column that you want to get
@@ -129,24 +133,26 @@ def _make_data_array(bg_df, start_index, end_index, item_str):
         total_len = start_index - end_index + EXTRA_SPACE + 1
         time_array = np.zeros(total_len)
         value_array = np.zeros(total_len)
-        curr = last = num_extra_added = miss = 0
+        data_gap_start_time = []
+        data_gap_end_time = []
+        curr, last, num_extra_added, miss = (0 for i in range(4))
 
         for index in range(start_index, end_index - 1, -1):
             try:
-                time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array,
-                                                                                                start_index, index, curr, last, num_extra_added, 'openaps', 'enacted', item_str)
+                time_array, value_array, data_gap_start_time, data_gap_end_time, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, data_gap_start_time, data_gap_end_time,
+                                                                                                                                        start_index, index, curr, last, num_extra_added, 'openaps', 'enacted', item_str)
             except:
 
                 try:
-                    time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array,
-                                                                                                    start_index, index, curr, last, num_extra_added, 'openaps', 'suggested', item_str)
+                    time_array, value_array, data_gap_start_time, data_gap_end_time, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, data_gap_start_time, data_gap_end_time,
+                                                                                                                                            start_index, index, curr, last, num_extra_added, 'openaps', 'suggested', item_str)
                 except:
 
                     if item_str == 'IOB':
-                        #Adds another case for finding IOB
+                        #
                         try:
-                            time_array, value_array, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array,
-                                                                                                            start_index, index, curr, last, num_extra_added, 'openaps', 'iob', 'iob')
+                            time_array, value_array, data_gap_start_time, data_gap_end_time, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, data_gap_start_time, data_gap_end_time,
+                                                                                                                                                    start_index, index, curr, last, num_extra_added, 'openaps', 'iob', 'iob')
                         except:
                             miss += 1
                     else:
@@ -161,12 +167,25 @@ def _make_data_array(bg_df, start_index, end_index, item_str):
         time_array = np.resize(time_array, total_len - miss + num_extra_added - EXTRA_SPACE)
         value_array = np.resize(value_array, total_len - miss + num_extra_added - EXTRA_SPACE)
 
-        return time_array, value_array
+        return time_array, value_array, data_gap_start_time, data_gap_end_time
+
+
+#Depending on the size of the array, this function returns the number of fourier series to be used on the lomb scargle
+#with 320 as the maximum
+def _get_num_fourier_series(size):
+    if size <= 2000:
+        return 40
+    elif size <= 4000:
+        return 80
+    elif size <= 8000:
+        return 160
+    else:
+        return 320
 
 
 #This function runs the lomb scargle given the time_array, the value_array, the period, and the number of fourier terms
-def _run_lomb_scargle(time_array, value_array, period, num_fourier_terms):
-    lomb = gatspy.periodic.LombScargle(Nterms=num_fourier_terms, fit_period=True, optimizer_kwds={'quiet':True})
+def _run_lomb_scargle(time_array, value_array, period):
+    lomb = gatspy.periodic.LombScargle(Nterms=_get_num_fourier_series(len(time_array)), fit_period=True, optimizer_kwds={'quiet':True})
     lomb.optimizer.set(period_range=(int(time_array.max()) - PERIOD_RANGE_MAX, int(time_array.max()) - PERIOD_RANGE_MIN), first_pass_coverage=FIRST_PASS_COVERAGE_NUM)
     lomb.fit(time_array, value_array)
 
@@ -181,15 +200,19 @@ def _plot_lomb(period, lomb, time_array, value_array, name_str):
 
 #This function gets the data from the lomb scargle. It takes in the start and end indices and returns a lomb scargle model for BG, IOB, and COB as well as the period
 def _get_lomb_scargle(bg_df, start_index, end_index, plot_lomb_array):
-        bg_time_array, bg_value_array = _make_data_array(bg_df, start_index, end_index, 'bg')
-        iob_time_array, iob_value_array = _make_data_array(bg_df, start_index, end_index, 'IOB')
-        cob_time_array, cob_value_array = _make_data_array(bg_df, start_index, end_index, 'COB')
+        bg_time_array, bg_value_array, bg_gap_start_time, bg_gap_end_time = _make_data_array(bg_df, start_index, end_index, 'bg')
+        iob_time_array, iob_value_array, iob_gap_start_time, iob_gap_end_time = _make_data_array(bg_df, start_index, end_index, 'IOB')
+        cob_time_array, cob_value_array, cob_gap_start_time, cob_gap_end_time = _make_data_array(bg_df, start_index, end_index, 'COB')
+
+        #Keep track of the data start and end times in the array
+        data_gap_start_time = bg_gap_start_time + iob_gap_start_time + cob_gap_start_time
+        data_gap_end_time = bg_gap_end_time + iob_gap_end_time + cob_gap_end_time
 
         period = np.linspace(0, int(bg_time_array.max()), int(bg_time_array.max()) + 1) #set period to be as large as possible
 
-        bg_lomb = _run_lomb_scargle(bg_time_array, bg_value_array, period, BG_NUM_FOURIER_SERIES)
-        iob_lomb = _run_lomb_scargle(iob_time_array, iob_value_array, period, IOB_NUM_FOURIER_SERIES)
-        cob_lomb = _run_lomb_scargle(cob_time_array, cob_value_array, period, COB_NUM_FOURIER_SERIES)
+        bg_lomb = _run_lomb_scargle(bg_time_array, bg_value_array, period)
+        iob_lomb = _run_lomb_scargle(iob_time_array, iob_value_array, period)
+        cob_lomb = _run_lomb_scargle(cob_time_array, cob_value_array, period)
 
         #Set all bg/cob values below zero equal to zero (iob can be negative if it is below baseline levels)
         bg_lomb[bg_lomb < 0] = 0
@@ -204,16 +227,16 @@ def _get_lomb_scargle(bg_df, start_index, end_index, plot_lomb_array):
             plt.legend(loc='upper left')
             plt.show()
 
-        return period, bg_lomb, iob_lomb, cob_lomb
+        return period, bg_lomb, iob_lomb, cob_lomb, data_gap_start_time, data_gap_end_time
 
 
-#The main function to be called to get the lomb data
+#The main function to be called to get the bg data arrays
 #It applies the lomb scargle periodogram to make a model of the data, and returns this model as an array
 def get_lomb_data(bg_df, start_index, end_index, plot_lomb_array):
     time_value_array = _make_time_value_array(bg_df, start_index, end_index)
-    period, bg_lomb, iob_lomb, cob_lomb = _get_lomb_scargle(bg_df, start_index, end_index, plot_lomb_array)
+    period, bg_lomb, iob_lomb, cob_lomb, data_gap_start_time, data_gap_end_time = _get_lomb_scargle(bg_df, start_index, end_index, plot_lomb_array)
 
     LombData = namedtuple('LombData', ['period', 'bg_lomb', 'iob_lomb', 'cob_lomb', 'time_value_array'])
     lomb_data = LombData(period, bg_lomb, iob_lomb, cob_lomb, time_value_array)
 
-    return lomb_data
+    return lomb_data, data_gap_start_time, data_gap_end_time

@@ -24,7 +24,7 @@ USAGE:
 Main Function:
 
 
-Trevor Tsue
+MedicineX OpenAPS
 2017-7-24
 '''
 

@@ -21,7 +21,7 @@ USAGE:
     train_data_matrix, actual_bg_train_array = make_data_matrix(bg_df, train_lomb_data, start_train_index, end_train_index, data_minutes, pred_minutes)
     test_data_matrix, actual_bg_test_array = make_data_matrix(bg_df, test_lomb_data, start_test_index, end_test_index, data_minutes, pred_minutes)
 
-Trevor Tsue
+MedicineX OpenAPS
 2017-7-24
 '''
 
@@ -67,41 +67,62 @@ def _make_actual_bg_array(bg_df, start_index, end_index, prediction_start_time):
     return time_bg_array, actual_bg_array
 
 
+#Returns true if the data lies in a data gap, so it will not be used
+def _in_data_gap(data_gap_start_time, data_gap_end_time, data_curr_time, data_start_time):
+    for gap_index in range(len(data_gap_start_time)):
+        if (data_curr_time > data_gap_start_time[gap_index] and data_curr_time < data_gap_end_time[gap_index]) or (data_start_time > data_gap_start_time[gap_index] and data_start_time < data_gap_end_time[gap_index]):
+            return True
+
+    return False
+
+
 #This function takes in the data arrays for BG time and lomb_data namedtuple (timeValue, BG, IOB, and COB) and fills in and returns the data training matrix.
 #It creates vectors with num_data_minutes of time, BG, IOB, and COB on each row, starting with the current time on the top.
 #Each row is a different current time, with the earliest current time on the bottom.
 #You can use either training or testing arrays.
-def _fill_matrix(time_bg_array, lomb_data, num_data_minutes, num_pred_minutes):
+def _fill_matrix(time_bg_array, actual_bg_array, lomb_data, data_gap_start_time, data_gap_end_time, num_data_minutes, num_pred_minutes):
     #The total number of r in the data_matrix. It will be the length of the time_bg_array. We will find
     #the times and values of the actual BGs and compare our predictions to these actual values.
     num_data_time_rows = len(time_bg_array)
     num_data_cols = NUM_DATA_ELEMENTS * num_data_minutes
+    curr_data_row = 0
 
     #data_matrix[row,col]
     data_matrix = np.zeros((num_data_time_rows, num_data_cols))
+    bg_output = np.zeros(num_data_time_rows)
 
     for row_index in range(num_data_time_rows):
         #The index of the arrays. Need to find the time of the time_bg_array and then subtract by num_pred_minutes to find the first entry of the data that we will use to make the prediction
         #Needs to be a WHOLE minute, not any decimals, so convert to an integer
-        overall_data_index = int(time_bg_array[row_index]) - num_pred_minutes
+        data_curr_time = int(time_bg_array[row_index]) - num_pred_minutes
+        data_start_time = data_curr_time - num_data_minutes + 1 #Start time of the data horizon
 
-        #row_index: Iterate over the data rows, skipping by the NUM_DATA_ELEMENTS rows (e.g. skipping by 4 rows)
-        #data_index: Iterate over the entries in the data based on the col_index (eg start at 9 and get ten minutes of data until time is 0)
-        for col_index, data_index in zip(range(0, num_data_cols, NUM_DATA_ELEMENTS), range(overall_data_index, overall_data_index - num_data_minutes, -1)):
-            data_matrix[row_index, col_index] = lomb_data.time_value_array[data_index]
-            data_matrix[row_index, col_index + 1] = lomb_data.bg_lomb[data_index]
-            data_matrix[row_index, col_index + 2] = lomb_data.iob_lomb[data_index]
-            data_matrix[row_index, col_index + 3] = lomb_data.cob_lomb[data_index]
+        if not _in_data_gap(data_gap_start_time, data_gap_end_time, data_curr_time, data_start_time):
+            #row_index: Iterate over the data rows, skipping by the NUM_DATA_ELEMENTS rows (e.g. skipping by 4 rows)
+            #data_index: Iterate over the entries in the data based on the col_index (eg start at 9 and get ten minutes of data until time is 0)
+            for col_index, data_index in zip(range(0, num_data_cols, NUM_DATA_ELEMENTS), range(data_curr_time, data_curr_time - num_data_minutes, -1)):
+                data_matrix[curr_data_row, col_index] = lomb_data.time_value_array[data_index]
+                data_matrix[curr_data_row, col_index + 1] = lomb_data.bg_lomb[data_index]
+                data_matrix[curr_data_row, col_index + 2] = lomb_data.iob_lomb[data_index]
+                data_matrix[curr_data_row, col_index + 3] = lomb_data.cob_lomb[data_index]
 
-    return data_matrix
+            bg_output[curr_data_row] = actual_bg_array[row_index]
+
+            curr_data_row += 1
+
+    #Resize the matrices and arrays
+    data_matrix = np.resize(data_matrix, (curr_data_row, num_data_cols))
+    bg_output = np.resize(bg_output, curr_data_row)
+
+    return data_matrix, bg_output
 
 
 #Function that returns the actual_bg arrays and the train_matrix for both the training and testing sets
-def make_data_matrix(bg_df, lomb_data, start_index, end_index, num_data_minutes, num_pred_minutes):
+def make_data_matrix(bg_df, lomb_data, data_gap_start_time, data_gap_end_time, start_index, end_index, num_data_minutes, num_pred_minutes):
     #This is the first possible prediction time due to the data and prediction gap. Anything less is not used
     prediction_start_time = num_data_minutes + num_pred_minutes - 1
 
     time_bg_array, actual_bg_array = _make_actual_bg_array(bg_df, start_index, end_index, prediction_start_time)
-    data_matrix = _fill_matrix(time_bg_array, lomb_data, num_data_minutes, num_pred_minutes)
+    data_matrix, bg_output = _fill_matrix(time_bg_array, actual_bg_array, lomb_data, data_gap_start_time, data_gap_end_time, num_data_minutes, num_pred_minutes)
 
-    return data_matrix, actual_bg_array
+    return data_matrix, bg_output

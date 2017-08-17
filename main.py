@@ -21,7 +21,7 @@ This code also requires the following libraries:
         gatspy
         sklearn
 
-Trevor Tsue
+MedicineX OpenAPS
 2017-7-24
 '''
 
@@ -45,16 +45,16 @@ from itertools import product
 #DATA CONSTANTS MODIFY THESE TO RUN DATA
 
 #Array of the ID to use. Put ID Number as a string (e.g. "00000001")
-ID_ARRAY = np.array(["00000001"])
+ID_ARRAY = np.array([ "00000003"])
 #Array of the data minutes that will be tested. (e.g. [1,15,30,45,60,75,90,105,120])
-DATA_MINUTES_ARRAY = np.array([1,5])
+DATA_MINUTES_ARRAY = np.array([5])
 #Array of the minutes in the future that the predictions will be made for. (e.g. [1,15,30])
 PRED_MINUTES_ARRAY = np.array([30])
 #Choose whether to run 'eventualBG', 'iob', 'cob', 'acob'. (e.g. ['iob', 'acob'])
 #Leave empty to run none
-OLD_PRED_ALGORITHM_ARRAY = np.array([])
+OLD_PRED_ALGORITHM_ARRAY = np.array(['eventualBG', 'iob', 'cob', 'acob'])
 #Array of the algorithms that will be tested. (e.g. ["Linear Regression", "Ridge Regression"])
-ALGORITHM_ARRAY = np.array(["MLP Regression"])
+ALGORITHM_ARRAY = np.array(["Linear Regression"])
 
 
 
@@ -83,32 +83,36 @@ SVM_LINEAR_PARAMETER_ARRAY = np.array([0.005, 0.01, 0.02, 0.04, 0.08, 0.16, 0.32
 SVM_LINEAR_EPSILON_ARRAY = np.array([0.0025, 0.005, 0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28])
 #Values for MLP parameters
 MLP_LEARNING_ARRAY = np.array([1e-05, 1e-04, 1e-03, 1e-02, 1e-01, 1])
-MLP_LAYER_ARRAY = np.array([2,4,8,16,32,64,128,256])
+MLP_LAYER_ARRAY = np.array([2,4,8,16,32,64,128])
 # MLP_FUNCTION_ARRAY = np.array(['identity', 'logistic', 'tanh', 'relu'])
 # MLP_OPTIMIZER_ARRAY = np.array(['lbfgs', 'sgd', 'adam'])
 
+#Returns the linear regression model
 def linear_regression_model(parameter_array):
     return linear_model.LinearRegression(fit_intercept=True, normalize=True, copy_X=True, n_jobs=1)
 
+#Returns the ridge regression model
 def ridge_regression_model(parameter_array):
     alpha_value = parameter_array[0]
     # ridge_solver = parameter_array[0]
     return linear_model.Ridge(alpha=alpha_value, fit_intercept=True, normalize=True, copy_X=True, max_iter=None, tol=0.001, solver='auto', random_state=None)
-
+#Returns the lasso regression model
 def lasso_regression_model(parameter_array):
     alpha_value = parameter_array[0] #alpha value index is first index
     return linear_model.Lasso(alpha=alpha_value, fit_intercept=True, normalize=True, precompute=False, copy_X=True,
                                 max_iter=1000, tol=0.0001, warm_start=False, positive=False, random_state=None, selection='cyclic')
 
+#Returns the svm linear regression model
 def svm_linear_regression(parameter_array):
     c_value = parameter_array[0]
     # epsilon_value = parameter_array[1]
     return svm.SVR(kernel='linear', degree=3, gamma='auto', coef0=0.0, tol=0.001, C=c_value, epsilon=0.1, shrinking=True, cache_size=200, verbose=False, max_iter=-1)
 
+#Returns the mlp regression model
 def mlp_regression(parameter_array):
     layer_value = parameter_array[0]
     second_layer_value = parameter_array[1]
-    # learning_rate = parameter_array[2]
+    learning_rate = parameter_array[2]
     return neural_network.MLPRegressor(hidden_layer_sizes=(layer_value,second_layer_value), activation='identity', solver='adam', alpha=1,
                                         batch_size='auto', learning_rate='constant', learning_rate_init=learning_rate, power_t=0.5,
                                         max_iter=200, shuffle=True, random_state=None, tol=0.0001, verbose=False, warm_start=False,
@@ -130,7 +134,7 @@ ALGORITHM_PARAMETERS = {
     "Ridge Regression":np.array([RIDGE_PARAMETER_ARRAY]),
     "Lasso Regression":np.array([LASSO_PARAMETER_ARRAY]),
     "SVM Linear Regression":np.array([SVM_LINEAR_PARAMETER_ARRAY]),
-    "MLP Regression":np.array([MLP_LAYER_ARRAY,MLP_LAYER_ARRAY])}
+    "MLP Regression":np.array([MLP_LAYER_ARRAY,MLP_LAYER_ARRAY,MLP_LEARNING_ARRAY])}
 
 #Dictionary with the name of the algorithm as the key and boolean to apply the StandardScaler transformation as the value
 ALGORITHM_TRANSFORM = {
@@ -234,9 +238,9 @@ def main():
         bg_df, start_valid_index, end_valid_index = get_bg_index(bg_df, start_valid_str, end_valid_str, "Validation", False)
         bg_df, start_test_index, end_test_index = get_bg_index(bg_df, start_test_str, end_test_str, "Testing", False)
 
-        train_lomb_data = get_lomb_data(bg_df, start_train_index, end_train_index, PLOT_LOMB_ARRAY)
-        valid_lomb_data = get_lomb_data(bg_df, start_valid_index, end_valid_index, PLOT_LOMB_ARRAY)
-        test_lomb_data = get_lomb_data(bg_df, start_test_index, end_test_index, PLOT_LOMB_ARRAY)
+        train_lomb_data, train_gap_start_time, train_gap_end_time = get_lomb_data(bg_df, start_train_index, end_train_index, PLOT_LOMB_ARRAY)
+        valid_lomb_data, valid_gap_start_time, valid_gap_end_time = get_lomb_data(bg_df, start_valid_index, end_valid_index, PLOT_LOMB_ARRAY)
+        test_lomb_data, test_gap_start_time, test_gap_end_time = get_lomb_data(bg_df, start_test_index, end_test_index, PLOT_LOMB_ARRAY)
 
         for pred_minutes in PRED_MINUTES_ARRAY:
             print "    Prediction Minutes: " + str(pred_minutes)
@@ -249,9 +253,9 @@ def main():
             for data_minutes in DATA_MINUTES_ARRAY:
                 print "        Data Minutes: " + str(data_minutes)
 
-                train_data_matrix, actual_bg_train_array = make_data_matrix(bg_df, train_lomb_data, start_train_index, end_train_index, data_minutes, pred_minutes)
-                valid_data_matrix, actual_bg_valid_array = make_data_matrix(bg_df, valid_lomb_data, start_valid_index, end_valid_index, data_minutes, pred_minutes)
-                test_data_matrix, actual_bg_test_array = make_data_matrix(bg_df, test_lomb_data, start_test_index, end_test_index, data_minutes, pred_minutes)
+                train_data_matrix, actual_bg_train_array = make_data_matrix(bg_df, train_lomb_data, train_gap_start_time, train_gap_end_time, start_train_index, end_train_index, data_minutes, pred_minutes)
+                valid_data_matrix, actual_bg_valid_array = make_data_matrix(bg_df, valid_lomb_data, valid_gap_start_time, valid_gap_end_time, start_valid_index, end_valid_index, data_minutes, pred_minutes)
+                test_data_matrix, actual_bg_test_array = make_data_matrix(bg_df, test_lomb_data, test_gap_start_time, test_gap_end_time, start_test_index, end_test_index, data_minutes, pred_minutes)
 
                 #Analyze ml algorithms
                 for algorithm_str in ALGORITHM_ARRAY:
@@ -283,7 +287,7 @@ def main():
                             best_reg_model = reg_model
                             best_parameter_array = parameter_array
 
-                        print parameter_array, error_value
+                        # print parameter_array, error_value
 
                     print "                Best Validation RMSE: " + str(best_error_value)
                     print "                Best Validation Parameter Value: " + str(best_parameter_array)

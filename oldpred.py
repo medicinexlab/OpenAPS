@@ -1,44 +1,13 @@
 '''
 oldpred.py
-This file contains the get_old_pred and analyze_old_pred_data functions.
-
-
-Main Function:
-         get_old_pred(bg_df, start_index, end_index, num_pred_minutes):
-
-Input:
-        bg_df                           The bg dataframe.
-        start_index                     The start index of the data.
-        end_index                       The end index of the data.
-        num_pred_minutes                The number of minutes in the future the prediction is for.
-
-Output:
-        eventual_pred_data              The namedtuple with eventualBG data composed of ['result_actual_bg_array', 'result_actual_bg_time_array', 'result_pred_array', 'result_pred_time_array'].
-        iob_pred_data                   The namedtuple with iob data composed of ['result_actual_bg_array', 'result_actual_bg_time_array', 'result_pred_array', 'result_pred_time_array'].
-        cob_pred_data                   The namedtuple with cob data composed of ['result_actual_bg_array', 'result_actual_bg_time_array', 'result_pred_array', 'result_pred_time_array'].
-        acob_pred_data                  The namedtuple with acob data composed of ['result_actual_bg_array', 'result_actual_bg_time_array', 'result_pred_array', 'result_pred_time_array'].
-
-USAGE:
-    eventual_pred_data, iob_pred_data, cob_pred_data, acob_pred_data = get_old_pred(bg_df, start_test_index, end_test_index, pred_minutes)
-
+This file contains the functions to analyze the old OpenAPS prediction algorithms from the devicestatus.json files.
+The data must be in the data folder in another folder with the ID only as the title.
+The data must be named devicestatus.json
 
 Main Function:
-        analyze_old_pred_data(old_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, algorithm_str, minutes_str)
+         analyze_old_pred_data(bg_df, old_pred_algorithm_array, start_test_index, end_test_index, pred_minutes, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str)
 
-Input:
-        old_pred_data                   The namedtuple with ['result_actual_bg_array', 'result_actual_bg_time_array', 'result_pred_array', 'result_pred_time_array']
-        show_pred_plot                  Boolean to show the plots of prediction and actual bg values.
-        save_pred_plot                  Boolean to save the plot of prediction and actual bg values
-        show_clarke_plot                Boolean to show the Clarke Error Grid plot.
-        save_clarke_plot                Boolean to save the Clarke Error Grid plot.
-        id_str                          String of the ID number.
-        algorithm_str                   String of the algorithm name.
-        minutes_str                     String with the prediction minutes.
-
-USAGE:
-        analyze_old_pred_data(old_pred_data, True, False, True, False, "00000001", "Linear Regression", "Pred30")
-
-Trevor Tsue
+MedicineX OpenAPS
 2017-7-26
 '''
 
@@ -68,9 +37,9 @@ def _new_pred_array(start_index, end_index, total_len):
     return pred_array, time_array, curr, miss
 
 
-#Function to get the eventualBG and actual BG. The predicted array index is 0 for the actual current BG
-#and NUM_PRED_SECTIONS for the eventualBG
-def _get_other_bg(bg_df, pred_array, pred_time_array, curr, miss, start_index, data_index, bg_str, pred_array_index):
+#Function to get the eventualBG and actual BG. Looks at the enacted directory before the suggested directory.
+#If there is no data, then it increases the miss count by 1.
+def _get_other_bg(bg_df, pred_array, pred_time_array, curr, miss, start_index, data_index, bg_str):
     pred_time_array[curr] = (bg_df.iloc[data_index]['created_at'] - bg_df.iloc[start_index]['created_at']) / np.timedelta64(1, 'm')
 
     try:
@@ -89,6 +58,8 @@ def _get_other_bg(bg_df, pred_array, pred_time_array, curr, miss, start_index, d
 
 
 #Function to get the predicted bg for the IOB, COB, and aCOB predictions
+#Looks at enacted directory first before looking at suggested directory.
+#If there is no data, then it increases the miss count by 1.
 def _get_named_pred(bg_df, pred_array, pred_time_array, curr, miss, start_index, data_index, pred_str, pred_array_index):
     pred_time_array[curr] = (bg_df.iloc[data_index]['created_at'] - bg_df.iloc[start_index]['created_at']) / np.timedelta64(1, 'm')
 
@@ -108,7 +79,7 @@ def _get_named_pred(bg_df, pred_array, pred_time_array, curr, miss, start_index,
 
 
 #Function to get the raw actual bg array and the old prediction arrays (eventualBG, IOB, COB, aCOB)
-#directly from the dataframe
+#directly from the dataframe given the dataframe, the start_index, end_index, and the index of the pred array (eg 30 min prediction has 6 as the index of pred array)
 def _get_raw_pred_array(bg_df, start_index, end_index, pred_array_index):
     total_len = start_index - end_index + 1
 
@@ -119,10 +90,10 @@ def _get_raw_pred_array(bg_df, start_index, end_index, pred_array_index):
     acob_pred_array, acob_pred_time_array, acob_curr, acob_miss = _new_pred_array(start_index, end_index, total_len)
 
     for data_index in range(start_index, end_index - 1, -1):
-        actual_bg_array, actual_bg_time_array, actual_curr, actual_miss= _get_other_bg(bg_df, actual_bg_array, actual_bg_time_array, actual_curr, actual_miss, start_index, data_index, 'bg', 0)
+        actual_bg_array, actual_bg_time_array, actual_curr, actual_miss= _get_other_bg(bg_df, actual_bg_array, actual_bg_time_array, actual_curr, actual_miss, start_index, data_index, 'bg')
 
         eventual_pred_array, eventual_pred_time_array, eventual_curr, eventual_miss = _get_other_bg(bg_df, eventual_pred_array, eventual_pred_time_array,
-                                                                                                        eventual_curr, eventual_miss, start_index, data_index, 'eventualBG', pred_array_index)
+                                                                                                        eventual_curr, eventual_miss, start_index, data_index, 'eventualBG')
         iob_pred_array, iob_pred_time_array, iob_curr, iob_miss = _get_named_pred(bg_df, iob_pred_array, iob_pred_time_array,
                                                                                     iob_curr, iob_miss, start_index, data_index, 'IOB', pred_array_index)
         cob_pred_array, cob_pred_time_array, cob_curr, cob_miss = _get_named_pred(bg_df, cob_pred_array, cob_pred_time_array,
@@ -149,15 +120,22 @@ def _get_raw_pred_array(bg_df, start_index, end_index, pred_array_index):
     return actual_bg_array, actual_bg_time_array, eventual_pred_array, eventual_pred_time_array, iob_pred_array, iob_pred_time_array, cob_pred_array, cob_pred_time_array, acob_pred_array, acob_pred_time_array
 
 
-#Finds the nearest value in time to the given values in the given array. Otherwise, it returns -1
-def find_nearest_index(array, value):
-    nearest_index = (np.abs(array-value)).argmin()
+#Finds the nearest value in time to the given values in the given array.
+#The nearest value in time must be in within the ACTUAL_BG_RANGE (for example, if ACTUAL_BG_RANGE = 5
+#and the time is 30, then the nearest index must lie from 25 < x < 35 or else -1 is returned)
+#If there is no nearest index at all, 01 is returned
+def _find_nearest_index(array, value):
+    nearest_index = (np.abs(array-value)).argmin() #finds the index of the time value closest to the input value
     if (int(np.abs(array[nearest_index] - value)) < ACTUAL_BG_RANGE):
+        #If inside the ACTUAL_BG_RANGE, then return the nearest index
         return nearest_index
     else:
         return -1
 
 
+#Given the actual_bg_array, actual_bg_time_array, pred_array, pred_time_array, and num_pred_minutes,
+#this function finds the nearest actual bg value to compare to the prediction value.
+#If there is one, then it adds all the values to the result arrays, which are returned as a namedtuple.
 #Returns the arrays such that the predBG corresponds to the actualBG in NUM_PRED_MINUTES in the future
 def _find_compare_array(actual_bg_array, actual_bg_time_array, pred_array, pred_time_array, num_pred_minutes):
     array_len = len(pred_array)
@@ -171,7 +149,7 @@ def _find_compare_array(actual_bg_array, actual_bg_time_array, pred_array, pred_
     for array_index in range(array_len):
         #The time that the prediction is predicting for
         future_time = int(pred_time_array[array_index]) + num_pred_minutes
-        nearest_index = find_nearest_index(actual_bg_time_array, future_time)
+        nearest_index = _find_nearest_index(actual_bg_time_array, future_time)
 
         if nearest_index == -1:
             miss += 1
@@ -193,9 +171,8 @@ def _find_compare_array(actual_bg_array, actual_bg_time_array, pred_array, pred_
     return OldPredData(result_actual_bg_array, result_actual_bg_time_array, result_pred_array, result_pred_time_array)
 
 
-#This function takes in the bg dataframe, the start and end indices, and the numebr of minutes of the prediction
-#The number of minutes in the future that you want to make a prediction for (e.g. make a prediction for 30 minutes in the future).
-
+#This function takes in the bg dataframe, the start and end indices, and the number of minutes in the future
+#that you want to make a prediction for AKA prediction horizon (e.g. make a prediction for 30 minutes in the future).
 #It returns the namedtuple with the following attributes ['result_actual_bg_array', 'result_actual_bg_time_array', 'result_pred_array', 'result_pred_time_array']
 def _get_old_pred(bg_df, start_index, end_index, num_pred_minutes):
     #The number of 5 minute sections until the prediction (e.g. 30 minutes = 6 sections)
@@ -203,7 +180,7 @@ def _get_old_pred(bg_df, start_index, end_index, num_pred_minutes):
 
     actual_bg_array, actual_bg_time_array, eventual_pred_array, eventual_pred_time_array, iob_pred_array, iob_pred_time_array, cob_pred_array, cob_pred_time_array, acob_pred_array, acob_pred_time_array = _get_raw_pred_array(bg_df, start_index, end_index, pred_array_index)
 
-    eventual_pred_data = _find_compare_array(actual_bg_array, actual_bg_time_array, eventual_pred_array, eventual_pred_time_array, num_pred_minutes)
+    eventual_pred_data = _find_compare_array(actual_bg_array, actual_bg_time_array, eventual_pred_array, eventual_pred_time_array, 30)
     iob_pred_data = _find_compare_array(actual_bg_array, actual_bg_time_array, iob_pred_array, iob_pred_time_array, num_pred_minutes)
     cob_pred_data= _find_compare_array(actual_bg_array, actual_bg_time_array, cob_pred_array, cob_pred_time_array, num_pred_minutes)
     acob_pred_data = _find_compare_array(actual_bg_array, actual_bg_time_array, acob_pred_array, acob_pred_time_array, num_pred_minutes)
@@ -211,7 +188,10 @@ def _get_old_pred(bg_df, start_index, end_index, num_pred_minutes):
     return eventual_pred_data, iob_pred_data, cob_pred_data, acob_pred_data
 
 
-#Plots old pred data
+#Plots old pred data given namedtuple of old data (eventualBG, acob, cob, or iob).
+#Can show or save prediction plot based on show_pred_plot or save_pred_plot, respectively.
+#Same goes for the Clarke Error grid with show_clarke_plot or save_clarke_plot, respectively.
+#id_str, algorithm_str, minutes_str are strings of the ID, the prediction algorithm and the number of prediction minutes used for the title.
 def _plot_old_pred_data(old_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, algorithm_str, minutes_str):
     actual_bg_array = old_pred_data.result_actual_bg_array
     actual_bg_time_array = old_pred_data.result_actual_bg_time_array
@@ -242,11 +222,35 @@ def _plot_old_pred_data(old_pred_data, show_pred_plot, save_pred_plot, show_clar
 
 #Function to analyze the old OpenAPS data
 def analyze_old_pred_data(bg_df, old_pred_algorithm_array, start_test_index, end_test_index, pred_minutes, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str):
+    """
+    Function that analyzes the old OpenAPS prediction models (eventualBG, aCOB, COB, and IOB)
+    based on what is put in the old_pred_algorithm_array. If it is empty, nothing will be plotted.
+    Since all the algorithms are calculated every 5 minutes, pred_minutes must be a multiple of 5.
+    eventualBG is only calculated by 30 minutes, so it will always be 30 minutes.
+    It will save the prediction plot if save_pred_plot is True and the clarke plot if save_clarke_plot is True.
+    It will show the prediction plot if show_pred_plot is true and the clarke plot if show_clarke_plot is True.
+
+    Input:      bg_df                           Pandas dataframe of all of the data from ./data/[id_str]/devicestatus.json
+                old_pred_algorithm_array        The array of the original OpenAPS prediction algorithms that you want to receive
+                                                data from. It can contain any/none of the following: "eventualBG", "acob", "cob", "iob"
+                start_test_index                The starting index of the testing data
+                end_test_index                  The ending index of the testing data
+                pred_minutes                    The number of minutes in the future the prediction is for (predicion horizon). Must be a multiple of 5
+                show_pred_plot                  Boolean to show the prediction plot
+                save_pred_plot                  Boolean to save the prediction plot
+                show_clarke_plot                Boolean to show the Clarke Error Grid Plot
+                save_clarke_plot                Boolean to save the Clarke Error Grid Plot
+                id_str                          The ID of the person as a string. Used for the title.
+
+    Output:     None
+    Usage:      analyze_old_pred_data(bg_df, ['iob', 'cob'], 1500, 0, 30, True, False, True, False, "00000001")
+    """
+
     if pred_minutes % 5 != 0: raise Exception("The prediction minutes is not a multiple of 5.")
     eventual_pred_data, iob_pred_data, cob_pred_data, acob_pred_data = _get_old_pred(bg_df, start_test_index, end_test_index, pred_minutes)
     if 'eventualBG' in old_pred_algorithm_array:
         print("        eventualBG")
-        _plot_old_pred_data(eventual_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, "eventualBG", "Pred" + str(pred_minutes))
+        _plot_old_pred_data(eventual_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, "eventualBG", "Pred" + str(30))
     if 'iob' in old_pred_algorithm_array:
         print("        iob")
         _plot_old_pred_data(iob_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, "IOB", "Pred" + str(pred_minutes))
