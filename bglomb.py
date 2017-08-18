@@ -1,37 +1,13 @@
-'''
-bgarray.py
+"""
+bglomb.py
 This file contains the functions to take the start and end indices of training and testing and returns the
 lomb-scargle model of the data.
 
-Main Function:
-        get_bg_array(bg_df, start_train_index, end_train_index, start_valid_index, end_valid_index, start_test_index, end_test_index, plot_lomb_array)
+Main Functions:     get_lomb_data(bg_df, start_index, end_index, plot_lomb_array)
 
-Input:
-        bg_df                           Pandas dataframe of all of the data from /data/[id_str]/devicestatus.json
-        start_train_index               Index of the start of training
-        end_train_index                 Index of the end of training (inclusive)
-        start_valid_index               Index of the start of validation
-        end_valid_index                 Index of the end of validation (inclusive)
-        start_test_index                Index of the start of testing
-        end_test_index                  Index of the end of testing (inclusive)
-        plot_lomb_array                 This is the array/list that will plot the lomb scargle data
-                                        if they have 0, 1, or 2 (0:BG, 1:IOB, and 2:COB)
-                                        Keep this list empty if you don't want to plot anything
-
-Output:
-        train_lomb_data                 This namedtuple struct contains the period, bg_lomb, iob_lomb, cob_lomb,
-                                        and time_value_array for the training data
-        valid_lomb_data                 This namedtuple struct contains the period, bg_lomb, iob_lomb, cob_lomb,
-                                        and time_value_array for the validation data
-        test_lomb_data                  This namedtuple struct contains the period, bg_lomb, iob_lomb, cob_lomb,
-                                        and time_value_array for the testing data
-
-USAGE:
-    train_lomb_data, valid_lomb_data, test_lomb_data = get_bg_array(bg_df, start_train_index, end_train_index, start_valid_index, end_valid_index, start_test_index, end_test_index, [0,1])
-
-Trevor Tsue
+MedicineX OpenAPS
 2017-7-24
-'''
+"""
 
 import numpy as np
 import gatspy
@@ -109,10 +85,8 @@ def _make_data_array_helper(bg_df, time_array, value_array, data_gap_start_time,
     old_time = time_array[last]
     old_value = value_array[last]
 
+    #If it is a data gap, store the start and stop time for later removal
     if new_time - old_time > MAX_DATA_GAP_MINUTES:
-        """
-        TODO ADD WAY TO KEEP TRACK OF DATA GAPS FOR LATER REMOVAL
-        """
         data_gap_start_time.append(old_time)
         data_gap_end_time.append(new_time)
 
@@ -138,18 +112,18 @@ def _make_data_array(bg_df, start_index, end_index, item_str):
         curr, last, num_extra_added, miss = (0 for i in range(4))
 
         for index in range(start_index, end_index - 1, -1):
-            try:
+            try: #look thorugh enacted
                 time_array, value_array, data_gap_start_time, data_gap_end_time, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, data_gap_start_time, data_gap_end_time,
                                                                                                                                         start_index, index, curr, last, num_extra_added, 'openaps', 'enacted', item_str)
             except:
-
+                #look through succested
                 try:
                     time_array, value_array, data_gap_start_time, data_gap_end_time, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, data_gap_start_time, data_gap_end_time,
                                                                                                                                             start_index, index, curr, last, num_extra_added, 'openaps', 'suggested', item_str)
                 except:
 
                     if item_str == 'IOB':
-                        #
+                        #if IOB, search for iob column
                         try:
                             time_array, value_array, data_gap_start_time, data_gap_end_time, curr, last, num_extra_added = _make_data_array_helper(bg_df, time_array, value_array, data_gap_start_time, data_gap_end_time,
                                                                                                                                                     start_index, index, curr, last, num_extra_added, 'openaps', 'iob', 'iob')
@@ -218,7 +192,7 @@ def _get_lomb_scargle(bg_df, start_index, end_index, plot_lomb_array):
         bg_lomb[bg_lomb < 0] = 0
         cob_lomb[cob_lomb < 0] = 0
 
-
+        #Plot lomb-scargle if values in the plot_lomb_array
         if len(plot_lomb_array) > 0:
             plt.clf()
             if "bg" in plot_lomb_array: _plot_lomb(period, bg_lomb, bg_time_array, bg_value_array, "BG")
@@ -233,10 +207,33 @@ def _get_lomb_scargle(bg_df, start_index, end_index, plot_lomb_array):
 #The main function to be called to get the bg data arrays
 #It applies the lomb scargle periodogram to make a model of the data, and returns this model as an array
 def get_lomb_data(bg_df, start_index, end_index, plot_lomb_array):
+    """
+    Function to make a lomb-scargle periodogram from the OpenAPS data in order to get
+    data for every minute, not just every 5 minutes. It takes in the dataframe
+    and the start and stop indices along with the plot_lomb_array, which is an array
+    with the values that allow you to plot the lomb-scargle values with matplotlib.
+
+    Input:      bg_df                           Pandas dataframe of all of the data from ./data/[id_str]/devicestatus.json
+                start_index                     The start index of the set. Should be higher in value than end_index, as
+                                                    the earlier times have higher indices
+                end_index                       The end index of the set. Should be lower in value than start_index, as
+                                                    the later times have lower indices. Inclusive, so this index is included in the data
+                plot_lomb_array                 Array with the types to be plotted as strings. e.g. ['bg','iob','cob']
+.
+    Output:     lomb_data                       The namedtuple holding the lomb-scargle data with these arrays:
+                                                    ['period', 'bg_lomb', 'iob_lomb', 'cob_lomb', 'time_value_array']
+                data_gap_start_time             Array with the start times of the data gaps that will be skipped
+                                                    The indices of this and data_gap_end_time correspond to the same data gap
+                data_gap_end_time               Array with the end times of the data gaps that will be skipped
+                                                    The indices of this and data_gap_start_time correspond to the same data gap
+    Usage:      train_lomb_data, train_gap_start_time, train_gap_end_time = get_lomb_data(bg_df, start_train_index, end_train_index, ['bg', 'iob'])
+    """
+
+    #Make the time_value_array, which is the array of hours from midnight
     time_value_array = _make_time_value_array(bg_df, start_index, end_index)
     period, bg_lomb, iob_lomb, cob_lomb, data_gap_start_time, data_gap_end_time = _get_lomb_scargle(bg_df, start_index, end_index, plot_lomb_array)
 
-    LombData = namedtuple('LombData', ['period', 'bg_lomb', 'iob_lomb', 'cob_lomb', 'time_value_array'])
+    LombData = namedtuple('LombData', ['period', 'bg_lomb', 'iob_lomb', 'cob_lomb', 'time_value_array']) #namedtouple to store the data
     lomb_data = LombData(period, bg_lomb, iob_lomb, cob_lomb, time_value_array)
 
     return lomb_data, data_gap_start_time, data_gap_end_time

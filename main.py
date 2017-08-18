@@ -1,4 +1,4 @@
-'''
+"""
 mainpred.py
 This file is the main code for running the prediction algorithms for OpenAPS.
 
@@ -23,12 +23,12 @@ This code also requires the following libraries:
 
 MedicineX OpenAPS
 2017-7-24
-'''
+"""
 
 from collections import namedtuple
 from bgdata import get_bg_dataframe
 from bgdata import get_bg_index
-from bgarray import get_lomb_data
+from bglomb import get_lomb_data
 from datamatrix import make_data_matrix
 from oldpred import analyze_old_pred_data
 from mlalgorithm import *
@@ -37,31 +37,50 @@ from sklearn import kernel_ridge
 from sklearn import svm
 from sklearn import neural_network
 from sklearn import metrics
-# from sknn.mlp import Regressor, Layer
 from itertools import product
 
 
 
-#DATA CONSTANTS MODIFY THESE TO RUN DATA
-
+"""
+MODIFY THE VARIABLES BELOW TO RUN DATA
+"""
 #Array of the ID to use. Put ID Number as a string (e.g. "00000001")
-ID_ARRAY = np.array([ "00000003"])
-#Array of the data minutes that will be tested. (e.g. [1,15,30,45,60,75,90,105,120])
-DATA_MINUTES_ARRAY = np.array([5])
-#Array of the minutes in the future that the predictions will be made for. (e.g. [1,15,30])
+#["00000001", "00000003", "00000004", "00000007", "00000010", "00000011",
+# "00000013", "00000015", "00000016", "00000017", "00000018", "00000019",
+# "00000020", "00000021", "00000023", "00000024"]
+ID_ARRAY = np.array(["00000001"])
+
+#Array of the minutes in the future that the predictions will be made for, AKA the prediction horizon. (e.g. [1,15,30])
+#1 refers to the prediction 1 minute after the current time (does not include the current time)
 PRED_MINUTES_ARRAY = np.array([30])
-#Choose whether to run 'eventualBG', 'iob', 'cob', 'acob'. (e.g. ['iob', 'acob'])
-#Leave empty to run none
-OLD_PRED_ALGORITHM_ARRAY = np.array(['eventualBG', 'iob', 'cob', 'acob'])
-#Array of the algorithms that will be tested. (e.g. ["Linear Regression", "Ridge Regression"])
-ALGORITHM_ARRAY = np.array(["Linear Regression"])
+
+#Array of the data minutes that will be tested, AKA data horizon. (e.g. [1,15,30,45,60,75,90,105,120])
+#Includes the current minute, so 1 is only the current minute, and 5 includes the current minute and 4 minutes before
+DATA_MINUTES_ARRAY = np.array([5])
+
+#Choose whether to run 'eventualBG', 'iob', 'cob', 'acob'. (e.g. ['iob', 'acob']). Leave empty to run none
+#['acob', 'cob', 'eventualBG', 'iob']
+OLD_PRED_ALGORITHM_ARRAY = np.array([])
+
+#Array of the algorithms that will be tested
+#["Linear Regression", "Ridge Regression", "Lasso Regression", "SVM Linear Regression", "MLP Regression"]
+ALGORITHM_ARRAY = np.array(["Linear Regression", "Ridge Regression", "Lasso Regression", "SVM Linear Regression", "MLP Regression"])
+
+#Prints every parameter for the grid search.
+PRINT_PARAMTERS = False
+"""
+END
+"""
 
 
 
-#PLOTTING CONSTANTS
 
+"""
+Modify the plotting variable below if needed
+"""
 #List of lomb-scargle plots to print
-#Leave empty to print none. Otherwise, use 'bg','iob','cob'. e.g. ['bg','cob']
+#Leave empty to print none. Otherwise, use something like ['bg','cob']
+#['bg','iob','cob']
 PLOT_LOMB_ARRAY = np.array([])
 
 #Boolean to show the prediction plot versus the actual bg
@@ -75,6 +94,9 @@ SAVE_CLARKE_PLOT = False
 
 
 
+"""
+Constants below
+"""
 #ALGORITHM CONTANTS
 #Values to be tested for the parameters
 RIDGE_PARAMETER_ARRAY = np.array([0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28, 2.56, 5.12])
@@ -83,9 +105,11 @@ SVM_LINEAR_PARAMETER_ARRAY = np.array([0.005, 0.01, 0.02, 0.04, 0.08, 0.16, 0.32
 SVM_LINEAR_EPSILON_ARRAY = np.array([0.0025, 0.005, 0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28])
 #Values for MLP parameters
 MLP_LEARNING_ARRAY = np.array([1e-05, 1e-04, 1e-03, 1e-02, 1e-01, 1])
-MLP_LAYER_ARRAY = np.array([2,4,8,16,32,64,128])
+MLP_LAYER_ARRAY = np.array([2, 4, 8, 16, 32, 64, 128, 256])
 # MLP_FUNCTION_ARRAY = np.array(['identity', 'logistic', 'tanh', 'relu'])
 # MLP_OPTIMIZER_ARRAY = np.array(['lbfgs', 'sgd', 'adam'])
+
+ALGORITHM_LIST = ["Linear Regression", "Ridge Regression", "Lasso Regression", "SVM Linear Regression", "MLP Regression"]
 
 #Returns the linear regression model
 def linear_regression_model(parameter_array):
@@ -96,6 +120,7 @@ def ridge_regression_model(parameter_array):
     alpha_value = parameter_array[0]
     # ridge_solver = parameter_array[0]
     return linear_model.Ridge(alpha=alpha_value, fit_intercept=True, normalize=True, copy_X=True, max_iter=None, tol=0.001, solver='auto', random_state=None)
+
 #Returns the lasso regression model
 def lasso_regression_model(parameter_array):
     alpha_value = parameter_array[0] #alpha value index is first index
@@ -117,9 +142,6 @@ def mlp_regression(parameter_array):
                                         batch_size='auto', learning_rate='constant', learning_rate_init=learning_rate, power_t=0.5,
                                         max_iter=200, shuffle=True, random_state=None, tol=0.0001, verbose=False, warm_start=False,
                                         momentum=0.9, nesterovs_momentum=True, early_stopping=False, validation_fraction=0.1, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
-
-
-ALGORITHM_LIST = ["Linear Regression", "Ridge Regression", "Lasso Regression", "SVM Linear Regression", "MLP Regression"]
 
 #Dictionary with the name of the algorithm as the key and the function as the value
 ALGORITHM_DICT = {
@@ -232,12 +254,14 @@ def main():
     for id_str in ID_ARRAY:
         print "\nID Number: " + id_str
         start_train_str, end_train_str, start_valid_str, end_valid_str, start_test_str, end_test_str = _get_id_dates(id_str)
-        bg_df = get_bg_dataframe(id_str)
+        bg_df = get_bg_dataframe(id_str) #imports json file as a pandas dataframe
 
+        #get start and stop indices
         bg_df, start_train_index, end_train_index = get_bg_index(bg_df, start_train_str, end_train_str, "Training", True)
         bg_df, start_valid_index, end_valid_index = get_bg_index(bg_df, start_valid_str, end_valid_str, "Validation", False)
         bg_df, start_test_index, end_test_index = get_bg_index(bg_df, start_test_str, end_test_str, "Testing", False)
 
+        #get the lomb-scargle data
         train_lomb_data, train_gap_start_time, train_gap_end_time = get_lomb_data(bg_df, start_train_index, end_train_index, PLOT_LOMB_ARRAY)
         valid_lomb_data, valid_gap_start_time, valid_gap_end_time = get_lomb_data(bg_df, start_valid_index, end_valid_index, PLOT_LOMB_ARRAY)
         test_lomb_data, test_gap_start_time, test_gap_end_time = get_lomb_data(bg_df, start_test_index, end_test_index, PLOT_LOMB_ARRAY)
@@ -253,6 +277,7 @@ def main():
             for data_minutes in DATA_MINUTES_ARRAY:
                 print "        Data Minutes: " + str(data_minutes)
 
+                #make data matrix inputs and the bg outputs
                 train_data_matrix, actual_bg_train_array = make_data_matrix(bg_df, train_lomb_data, train_gap_start_time, train_gap_end_time, start_train_index, end_train_index, data_minutes, pred_minutes)
                 valid_data_matrix, actual_bg_valid_array = make_data_matrix(bg_df, valid_lomb_data, valid_gap_start_time, valid_gap_end_time, start_valid_index, end_valid_index, data_minutes, pred_minutes)
                 test_data_matrix, actual_bg_test_array = make_data_matrix(bg_df, test_lomb_data, test_gap_start_time, test_gap_end_time, start_test_index, end_test_index, data_minutes, pred_minutes)
@@ -262,9 +287,9 @@ def main():
                     print "            Algorithm: " + algorithm_str
 
                     if ALGORITHM_TRANSFORM[algorithm_str]:
-                        input_train_data_matrix, input_valid_data_matrix, input_test_data_matrix = preprocess_data(train_data_matrix, valid_data_matrix, test_data_matrix)
+                        input_train_data_matrix, input_valid_data_matrix, input_test_data_matrix = preprocess_data(train_data_matrix, valid_data_matrix, test_data_matrix) #Transform data
                     else:
-                        input_train_data_matrix, input_valid_data_matrix, input_test_data_matrix = train_data_matrix, valid_data_matrix, test_data_matrix
+                        input_train_data_matrix, input_valid_data_matrix, input_test_data_matrix = train_data_matrix, valid_data_matrix, test_data_matrix #don't transform data
 
                     new_parameter_bool = True
                     #Iterate over every possible combination of parameters
@@ -287,7 +312,7 @@ def main():
                             best_reg_model = reg_model
                             best_parameter_array = parameter_array
 
-                        # print parameter_array, error_value
+                        if PRINT_PARAMTERS: print parameter_array, error_value
 
                     print "                Best Validation RMSE: " + str(best_error_value)
                     print "                Best Validation Parameter Value: " + str(best_parameter_array)
@@ -297,7 +322,7 @@ def main():
                     test_prediction[test_prediction > MAXIMUM_BG] = MAXIMUM_BG #Set maximum bg level
 
                     analyze_ml_data(actual_bg_test_array, test_prediction, SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_str, algorithm_str,
-                                    "Pred" + str(pred_minutes) + "Data" + str(data_minutes))
+                                    "Pred" + str(pred_minutes) + "Data" + str(data_minutes)) #Analyze data
 
 
 #Run the main function
