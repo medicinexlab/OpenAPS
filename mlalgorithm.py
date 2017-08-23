@@ -59,8 +59,8 @@ def analyze_ml_data(actual_bg_array, bg_prediction, show_pred_plot, save_pred_pl
 
     countarray = np.linspace(0, len(actual_bg_array) - 1, len(actual_bg_array))
     plt.clf()
-    plt.plot(countarray, actual_bg_array, label="Actual BG")
-    plt.plot(countarray, bg_prediction, label="BG Prediction")
+    plt.plot(countarray, actual_bg_array, label="Actual BG", color='black', linestyle='-')
+    plt.plot(countarray, bg_prediction, label="BG Prediction", color='black', linestyle=':')
     plt.title(id_str + " " + algorithm_str + " BG Analysis")
     plt.ylabel("Blood Glucose Level (mg/dl)")
     plt.xlabel("Time (minutes)")

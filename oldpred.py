@@ -13,7 +13,7 @@ MedicineX OpenAPS
 import numpy as np
 from collections import namedtuple
 import math
-from sklearn.metrics import mean_squared_error
+from sklearn import metrics
 import ClarkeErrorGrid
 import matplotlib.pyplot as plt
 
@@ -36,6 +36,17 @@ def _new_pred_array(start_index, end_index, total_len):
     return pred_array, time_array, curr, miss
 
 
+
+#This function checks if the current value is nan and fixes the curr and miss values to reflect it
+def _check_pred_nan(pred_array, curr, miss):
+    if not np.isnan(pred_array[curr]):
+        curr += 1
+    else:
+        miss += 1
+
+    return curr, miss
+
+
 #Function to get the eventualBG and actual BG. Looks at the enacted directory before the suggested directory.
 #If there is no data, then it increases the miss count by 1.
 def _get_other_bg(bg_df, pred_array, pred_time_array, curr, miss, start_index, data_index, bg_str):
@@ -43,12 +54,12 @@ def _get_other_bg(bg_df, pred_array, pred_time_array, curr, miss, start_index, d
 
     try:
         pred_array[curr] = bg_df.iloc[data_index]['openaps']['enacted'][bg_str]
-        curr += 1
+        curr, miss = _check_pred_nan(pred_array, curr, miss)
 
     except:
         try:
             pred_array[curr] = bg_df.iloc[data_index]['openaps']['suggested'][bg_str]
-            curr += 1
+            curr, miss = _check_pred_nan(pred_array, curr, miss)
 
         except:
             miss += 1
@@ -64,12 +75,12 @@ def _get_named_pred(bg_df, pred_array, pred_time_array, curr, miss, start_index,
 
     try:
         pred_array[curr] = bg_df.iloc[data_index]['openaps']['enacted']['predBGs'][pred_str][pred_array_index]
-        curr += 1
+        curr, miss = _check_pred_nan(pred_array, curr, miss)
 
     except:
         try:
             pred_array[curr] = bg_df.iloc[data_index]['openaps']['suggested']['predBGs'][pred_str][pred_array_index]
-            curr += 1
+            curr, miss = _check_pred_nan(pred_array, curr, miss)
 
         except:
             miss += 1
@@ -199,17 +210,21 @@ def _plot_old_pred_data(old_pred_data, show_pred_plot, save_pred_plot, show_clar
     pred_time_array = old_pred_data.result_pred_time_array
 
     #Root mean squared error
-    rms = math.sqrt(mean_squared_error(actual_bg_array, pred_array))
+    rms = math.sqrt(metrics.mean_squared_error(actual_bg_array, pred_array))
     print "                Root Mean Squared Error: " + str(rms)
+    print "                Mean Absolute Error: " + str(metrics.mean_absolute_error(actual_bg_array, pred_array))
+    print "                R^2 Coefficient of Determination: " + str(metrics.r2_score(actual_bg_array, pred_array))
 
     plot, zone = ClarkeErrorGrid.clarke_error_grid(actual_bg_array, pred_array, id_str + " " + algorithm_str)
+    print "                Percent A:{}".format(float(zone[0]) / (zone[0] + zone[1] + zone[2] + zone[3] + zone[4]))
+    print "                Percent C, D, E:{}".format(float(zone[2] + zone[3] + zone[4])/ (zone[0] + zone[1] + zone[2] + zone[3] + zone[4]))
     print "                Zones are A:{}, B:{}, C:{}, D:{}, E:{}\n".format(zone[0],zone[1],zone[2],zone[3],zone[4])
     if save_clarke_plot: plt.savefig(id_str + algorithm_str.replace(" ", "") + minutes_str + "clarke.png")
     if show_clarke_plot: plot.show()
 
     plt.clf()
-    plt.plot(actual_bg_time_array, actual_bg_array, label="Actual BG")
-    plt.plot(pred_time_array, pred_array, label="BG Prediction")
+    plt.plot(actual_bg_time_array, actual_bg_array, label="Actual BG", color='black', linestyle='-')
+    plt.plot(pred_time_array, pred_array, label="BG Prediction", color='black', linestyle=':')
     plt.title(id_str + " " + algorithm_str + " BG Analysis")
     plt.ylabel("Blood Glucose Level (mg/dl)")
     plt.xlabel("Time (minutes)")
