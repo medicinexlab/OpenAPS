@@ -28,10 +28,12 @@ MedicineX OpenAPS
 from collections import namedtuple
 from bgdata import get_bg_dataframe
 from bgdata import get_bg_index
+from bgdata import get_new_df_entries_every_5_minutes
 from bglomb import get_lomb_data
 from datamatrix import make_data_matrix
 from oldpred import analyze_old_pred_data
 from mlalgorithm import *
+from savedata import *
 from sklearn import linear_model
 from sklearn import kernel_ridge
 from sklearn import svm
@@ -47,11 +49,11 @@ MODIFY THE VARIABLES BELOW TO RUN DATA
 #["00000001", "00000003", "00000004", "00000007", "00000010", "00000011",
 # "00000013", "00000015", "00000016", "00000017", "00000020", "00000021",
 # "00000023", "00000024"]
-ID_ARRAY = np.array(["00000004"])
+ID_ARRAY = np.array(["00000001"])
 
 #Array of the minutes in the future that the predictions will be made for, AKA the prediction horizon. (e.g. [1,15,30])
 #1 refers to the prediction 1 minute after the current time (does not include the current time)
-PRED_MINUTES_ARRAY = np.array([ 60, 90, 120])
+PRED_MINUTES_ARRAY = np.array([30, 45, 60, 90, 120])
 
 #Array of the data minutes that will be tested, AKA data horizon. (e.g. [1,15,30,45,60,75,90,105,120])
 #Includes the current minute, so 1 is only the current minute, and 5 includes the current minute and 4 minutes before
@@ -59,17 +61,27 @@ DATA_MINUTES_ARRAY = np.array([5])
 
 #Choose whether to run 'eventualBG', 'iob', 'cob', 'acob'. (e.g. ['iob', 'acob']). Leave empty to run none
 #['acob', 'cob', 'eventualBG', 'iob']
-OLD_PRED_ALGORITHM_ARRAY = np.array([])
+OLD_PRED_ALGORITHM_ARRAY = np.array(['acob', 'cob', 'eventualBG', 'iob'])
 
 #Array of the algorithms that will be tested
 #["Linear Regression", "Ridge Regression", "Lasso Regression", "SVM Linear Regression", "MLP Regression"]
-ALGORITHM_ARRAY = np.array(["Linear Regression"])
+ALGORITHM_ARRAY = np.array(["Linear Regression", "Ridge Regression", "Lasso Regression", "SVM Linear Regression", "MLP Regression"])
 
 #Prints every parameter for the grid search.
 PRINT_PARAMTERS = False
 """
 END
 """
+
+
+"""
+Modify to save/load the data
+"""
+SAVE_LOMB_DATA = False
+LOAD_LOMB_DATA = False
+SAVE_PRED_DATA = False
+LOAD_PRED_DATA = False
+SAVE_ALOGORITHM = False
 
 
 
@@ -83,11 +95,11 @@ Modify the plotting variable below if needed
 PLOT_LOMB_ARRAY = np.array([])
 
 #Boolean to show the prediction plot versus the actual bg
-SHOW_PRED_PLOT = True
+SHOW_PRED_PLOT = False
 #Boolean to save the prediction plot
 SAVE_PRED_PLOT = False
 #Boolean to show the Clarke Error Grid plot
-SHOW_CLARKE_PLOT = True
+SHOW_CLARKE_PLOT = False
 #Boolean to save the Clarke Error Grid plot
 SAVE_CLARKE_PLOT = False
 
@@ -260,26 +272,40 @@ def main():
         bg_df, start_valid_index, end_valid_index = get_bg_index(bg_df, start_valid_str, end_valid_str, "Validation", False)
         bg_df, start_test_index, end_test_index = get_bg_index(bg_df, start_test_str, end_test_str, "Testing", False)
 
-        #get the lomb-scargle data
-        train_lomb_data, train_gap_start_time, train_gap_end_time = get_lomb_data(bg_df, start_train_index, end_train_index, PLOT_LOMB_ARRAY)
-        valid_lomb_data, valid_gap_start_time, valid_gap_end_time = get_lomb_data(bg_df, start_valid_index, end_valid_index, PLOT_LOMB_ARRAY)
-        test_lomb_data, test_gap_start_time, test_gap_end_time = get_lomb_data(bg_df, start_test_index, end_test_index, PLOT_LOMB_ARRAY)
+        train_bg_df, start_train_index, end_train_index = get_new_df_entries_every_5_minutes(bg_df, start_train_index, end_train_index, "New Training")
+        valid_bg_df, start_valid_index, end_valid_index = get_new_df_entries_every_5_minutes(bg_df, start_valid_index, end_valid_index, "New Validation")
+        test_bg_df, start_test_index, end_test_index = get_new_df_entries_every_5_minutes(bg_df, start_test_index, end_test_index, "New Testing")
+
+        if LOAD_LOMB_DATA:
+            train_lomb_data = load_array(id_str + "_train_lomb_data") #If you have already saved data, then load it
+            valid_lomb_data = load_array(id_str + "_valid_lomb_data")
+            test_lomb_data = load_array(id_str + "_test_lomb_data")
+        else:
+            #get the lomb-scargle data
+            train_lomb_data = get_lomb_data(train_bg_df, start_train_index, end_train_index, PLOT_LOMB_ARRAY)
+            valid_lomb_data = get_lomb_data(valid_bg_df, start_valid_index, end_valid_index, PLOT_LOMB_ARRAY)
+            test_lomb_data = get_lomb_data(test_bg_df, start_test_index, end_test_index, PLOT_LOMB_ARRAY)
+
+        if SAVE_LOMB_DATA:
+            save_data(train_lomb_data, id_str + "_train_lomb_data") #Save data if you want to
+            save_data(valid_lomb_data, id_str + "_valid_lomb_data")
+            save_data(test_lomb_data, id_str + "_test_lomb_data")
 
         for pred_minutes in PRED_MINUTES_ARRAY:
             print "    Prediction Minutes: " + str(pred_minutes)
 
             #Analyze old pred methods
             if len(OLD_PRED_ALGORITHM_ARRAY) != 0:
-                analyze_old_pred_data(bg_df, OLD_PRED_ALGORITHM_ARRAY, start_test_index, end_test_index, pred_minutes,
+                analyze_old_pred_data(test_bg_df, OLD_PRED_ALGORITHM_ARRAY, start_test_index, end_test_index, pred_minutes,
                                         SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_str)
 
             for data_minutes in DATA_MINUTES_ARRAY:
                 print "        Data Minutes: " + str(data_minutes)
 
                 #make data matrix inputs and the bg outputs
-                train_data_matrix, actual_bg_train_array = make_data_matrix(bg_df, train_lomb_data, train_gap_start_time, train_gap_end_time, start_train_index, end_train_index, data_minutes, pred_minutes)
-                valid_data_matrix, actual_bg_valid_array = make_data_matrix(bg_df, valid_lomb_data, valid_gap_start_time, valid_gap_end_time, start_valid_index, end_valid_index, data_minutes, pred_minutes)
-                test_data_matrix, actual_bg_test_array = make_data_matrix(bg_df, test_lomb_data, test_gap_start_time, test_gap_end_time, start_test_index, end_test_index, data_minutes, pred_minutes)
+                train_data_matrix, actual_bg_train_array = make_data_matrix(train_bg_df, train_lomb_data, start_train_index, end_train_index, data_minutes, pred_minutes)
+                valid_data_matrix, actual_bg_valid_array = make_data_matrix(valid_bg_df, valid_lomb_data, start_valid_index, end_valid_index, data_minutes, pred_minutes)
+                test_data_matrix, actual_bg_test_array = make_data_matrix(test_bg_df, test_lomb_data, start_test_index, end_test_index, data_minutes, pred_minutes)
 
                 #Analyze ml algorithms
                 for algorithm_str in ALGORITHM_ARRAY:
@@ -322,6 +348,13 @@ def main():
 
                     analyze_ml_data(actual_bg_test_array, test_prediction, SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_str, algorithm_str,
                                     "Pred" + str(pred_minutes) + "Data" + str(data_minutes)) #Analyze data
+
+                    if SAVE_PRED_DATA:
+                        save_data(actual_bg_test_array, "{}pred{}data{}{}_actual_bg_array".format(id_str, str(pred_minutes), str(data_minutes), algorithm_str))
+                        save_data(test_prediction, "{}pred{}data{}{}_pred_bg_array".format(id_str, str(pred_minutes), str(data_minutes), algorithm_str))
+
+                    if SAVE_ALOGORITHM:
+                        save_data(best_reg_model, "{}pred{}data{}{}_object".format(id_str, str(pred_minutes), str(data_minutes), algorithm_str))
 
 
 #Run the main function

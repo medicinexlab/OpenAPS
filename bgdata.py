@@ -15,6 +15,11 @@ MedicineX OpenAPS
 import pandas as pd
 import numpy as np
 
+#The number of minutes of spacing between each actual data entry in the actual_bg_array.
+#Keeping every entry greater than this value prevents overfitting (e.g. entries every 5 minutes work
+#well, but entries every minute cause overfitting)
+MIN_ENTRY_SPACING_MINUTE = 5
+
 
 
 #Function to read in the start and end date according to year-month-day format and convert them to datetimes
@@ -61,7 +66,7 @@ def get_bg_dataframe(id_str):
     """
 
     try:
-        file_location = "data/" + id_str + "/devicestatus.json"
+        file_location = "./data/" + id_str + "/devicestatus.json"
         bg_df = pd.read_json(file_location) #Opens the data file and reads in the data into a dataFrame
     except:
         raise IOError(file_location + " is not a valid file.")
@@ -100,3 +105,39 @@ def get_bg_index(bg_df, start_str, end_str, set_str, make_col_bool):
     print
 
     return bg_df, start_index, end_index
+
+
+#Makes new dataframe spaced out by 5 minute entries
+def get_new_df_entries_every_5_minutes(bg_df, start_index, end_index, set_str):
+    new_bg_df = pd.DataFrame()
+    last_time = - MIN_ENTRY_SPACING_MINUTE
+    starting_df = True
+
+    for df_index in range(end_index, start_index):
+        add_entry = False
+        try:
+            time = (bg_df.iloc[df_index]['created_at'] - bg_df.iloc[start_index]['created_at']) / np.timedelta64(1, 'm')
+            test_if_has_enacted = bg_df.iloc[df_index]['openaps']['enacted']['bg'] #Test to see if df entry has suggested and enacted functioning
+            test_if_has_suggested = bg_df.iloc[df_index]['openaps']['suggested']['bg']
+
+            if last_time - time >= MIN_ENTRY_SPACING_MINUTE or starting_df: #check if spaced out by 5 minute or just starting the df
+                starting_df = False
+                last_time = time
+
+                #If it has both enacted and suggested and is spaced out by MIN_ENTRY_SPACING_MINUTE from last entry, then set boolean to be true
+                add_entry = True
+        except:
+            add_entry = False
+
+        if add_entry:
+            new_bg_df = new_bg_df.append(bg_df.iloc[df_index], ignore_index=True) #if boolean is true, add it to the new dataframe
+
+    start_index = len(new_bg_df) - 1
+    end_index = 0
+
+    #Print the number of entries, the start index, and the end index
+    print("{}: {} number entries".format(set_str, start_index - end_index + 1))
+    print("{} Start Index = {} and End Index = {}".format(set_str, start_index, end_index))
+    print
+
+    return new_bg_df, start_index, end_index

@@ -2,7 +2,7 @@
 data_matrix.py
 Creates the data matrix for the OpenAPS prediction algorithms
 
-Main Functions:      make_data_matrix(bg_df, lomb_data, data_gap_start_time, data_gap_end_time, start_index, end_index, num_data_minutes, num_pred_minutes)
+Main Functions:      make_data_matrix(bg_df, lomb_data, start_index, end_index, num_data_minutes, num_pred_minutes)
 
 MedicineX OpenAPS
 2017-7-24
@@ -33,15 +33,18 @@ def _make_actual_bg_array(bg_df, start_index, end_index, prediction_start_time):
             try:
                 actual_bg_array[array_index] = bg_df.iloc[df_index]['openaps']['enacted']['bg']
                 array_index += 1
+                last_time = time
             except:
                 try:
                     actual_bg_array[array_index] = bg_df.iloc[df_index]['openaps']['suggested']['bg']
                     array_index += 1
+                    last_time = time
                 except:
                     #If a miss, don't move to the next index and instead add one to the number missed
                     miss += 1
         else:
             miss += 1
+
 
     #Remove the number of missed data
     time_bg_array = np.resize(time_bg_array, total_len - miss)
@@ -102,7 +105,7 @@ def _fill_matrix(time_bg_array, actual_bg_array, lomb_data, data_gap_start_time,
 
 
 #Function that returns the actual_bg arrays and the train_matrix for both the training and testing sets
-def make_data_matrix(bg_df, lomb_data, data_gap_start_time, data_gap_end_time, start_index, end_index, num_data_minutes, num_pred_minutes):
+def make_data_matrix(bg_df, lomb_data, start_index, end_index, num_data_minutes, num_pred_minutes):
     """
     Function to make the input data matrix for the machine learning algorithms. It
     takes in the dataframe, the lomb-scargle data, the data gap start and stop time arrays,
@@ -110,11 +113,7 @@ def make_data_matrix(bg_df, lomb_data, data_gap_start_time, data_gap_end_time, s
 
     Input:      bg_df                           Pandas dataframe of all of the data from ./data/[id_str]/devicestatus.json
                 lomb_data                       The namedtuple holding the lomb-scargle data with these arrays:
-                                                    ['period', 'bg_lomb', 'iob_lomb', 'cob_lomb', 'time_value_array']
-                data_gap_start_time             Array with the start times of the data gaps that will be skipped
-                                                    The indices of this and data_gap_end_time correspond to the same data gap
-                data_gap_end_time               Array with the end times of the data gaps that will be skipped
-                                                    The indices of this and data_gap_start_time correspond to the same data gap
+                                                    ['period', 'bg_lomb', 'iob_lomb', 'cob_lomb', 'time_value_array', data_gap_start_time, data_gap_end_time]
                 start_index                     The start index of the set. Should be higher in value than end_index, as
                                                     the earlier times have higher indices
                 end_index                       The end index of the set. Should be lower in value than start_index, as
@@ -126,13 +125,13 @@ def make_data_matrix(bg_df, lomb_data, data_gap_start_time, data_gap_end_time, s
 .
     Output:     data_matrix                     The input data matrix for the machine learning algorithm
                 bg_output                       The output array of bg values that corresponds to the data_matrix
-    Usage:      train_data_matrix, actual_bg_train_array = make_data_matrix(bg_df, train_lomb_data, train_gap_start_time, train_gap_end_time, start_train_index, end_train_index, 5, 30)
+    Usage:      train_data_matrix, actual_bg_train_array = make_data_matrix(bg_df, train_lomb_data, start_train_index, end_train_index, 5, 30)
     """
 
     #This is the first possible prediction time due to the data and prediction gap. Anything less is not used
     prediction_start_time = num_data_minutes + num_pred_minutes - 1
 
     time_bg_array, actual_bg_array = _make_actual_bg_array(bg_df, start_index, end_index, prediction_start_time)
-    data_matrix, bg_output = _fill_matrix(time_bg_array, actual_bg_array, lomb_data, data_gap_start_time, data_gap_end_time, num_data_minutes, num_pred_minutes)
+    data_matrix, bg_output = _fill_matrix(time_bg_array, actual_bg_array, lomb_data, lomb_data.data_gap_start_time, lomb_data.data_gap_end_time, num_data_minutes, num_pred_minutes)
 
     return data_matrix, bg_output

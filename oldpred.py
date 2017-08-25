@@ -1,6 +1,7 @@
 """
 oldpred.py
 This file contains the functions to analyze the old OpenAPS prediction algorithms from the devicestatus.json files.
+It examines entries spaced out by 5 minutes (MIN_ENTRY_SPACING_MINUTE).
 The data must be in the data folder in another folder with the ID only as the title.
 The data must be named devicestatus.json
 
@@ -24,6 +25,9 @@ DATA_SPACING = 5
 #(e.g. if predBG is at 0 min and there is no actual BG at 30 min, this ACTUAL_BG_RANGE will accept an actualBG
 #the time 30 - ACTUAL_BG_RANGE < x < 30 + ACTUAL_BG_RANGE, or in this case, 25 < x < 35)
 ACTUAL_BG_RANGE = 5
+
+#prediction horizon for eventualBG
+EVENTUALBG_PRED_MINUTES = 30
 
 
 
@@ -169,7 +173,7 @@ def _find_compare_array(actual_bg_array, actual_bg_time_array, pred_array, pred_
             result_actual_bg_time_array[curr] = actual_bg_time_array[nearest_index]
             result_pred_array[curr] = pred_array[array_index]
             result_pred_time_array[curr] = future_time
-            curr += 1
+            curr += 1 #update index
 
     result_actual_bg_array = np.resize(result_actual_bg_array, array_len - miss) #resize arrays
     result_actual_bg_time_array = np.resize(result_actual_bg_time_array, array_len - miss)
@@ -263,7 +267,7 @@ def analyze_old_pred_data(bg_df, old_pred_algorithm_array, start_test_index, end
 
     if pred_minutes % 5 != 0: raise Exception("The prediction minutes is not a multiple of 5.")
     eventual_pred_data, iob_pred_data, cob_pred_data, acob_pred_data = _get_old_pred(bg_df, start_test_index, end_test_index, pred_minutes)
-    if 'eventualBG' in old_pred_algorithm_array:
+    if 'eventualBG' in old_pred_algorithm_array and pred_minutes == EVENTUALBG_PRED_MINUTES:
         print("        eventualBG")
         _plot_old_pred_data(eventual_pred_data, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, "eventualBG", "Pred" + str(30))
     if 'iob' in old_pred_algorithm_array:

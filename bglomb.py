@@ -12,7 +12,6 @@ MedicineX OpenAPS
 import numpy as np
 import gatspy
 import matplotlib.pyplot as plt
-from collections import namedtuple
 
 
 #Lomb-Scargle Periodogram Global Variables:
@@ -147,11 +146,11 @@ def _make_data_array(bg_df, start_index, end_index, item_str):
 #Depending on the size of the array, this function returns the number of fourier series to be used on the lomb scargle
 #with 320 as the maximum
 def _get_num_fourier_series(size):
-    if size <= 2000:
+    if size <= 1000:
         return 40
-    elif size <= 4000:
+    if size <= 2000:
         return 80
-    elif size <= 8000:
+    elif size <= 4000:
         return 160
     else:
         return 320
@@ -204,6 +203,18 @@ def _get_lomb_scargle(bg_df, start_index, end_index, plot_lomb_array):
         return period, bg_lomb, iob_lomb, cob_lomb, data_gap_start_time, data_gap_end_time
 
 
+#Class to store the lomb data
+class LombData(object):
+     def __init__(self, period, bg_lomb, iob_lomb, cob_lomb, time_value_array, data_gap_start_time, data_gap_end_time):
+         self.period = period
+         self.bg_lomb = bg_lomb
+         self.iob_lomb = iob_lomb
+         self.cob_lomb = cob_lomb
+         self.time_value_array = time_value_array
+         self.data_gap_start_time = data_gap_start_time
+         self.data_gap_end_time = data_gap_end_time
+
+
 #The main function to be called to get the bg data arrays
 #It applies the lomb scargle periodogram to make a model of the data, and returns this model as an array
 def get_lomb_data(bg_df, start_index, end_index, plot_lomb_array):
@@ -221,19 +232,18 @@ def get_lomb_data(bg_df, start_index, end_index, plot_lomb_array):
                 plot_lomb_array                 Array with the types to be plotted as strings. e.g. ['bg','iob','cob']
 .
     Output:     lomb_data                       The namedtuple holding the lomb-scargle data with these arrays:
-                                                    ['period', 'bg_lomb', 'iob_lomb', 'cob_lomb', 'time_value_array']
-                data_gap_start_time             Array with the start times of the data gaps that will be skipped
+                                                    ['period', 'bg_lomb', 'iob_lomb', 'cob_lomb', 'time_value_array', data_gap_start_time, data_gap_end_time]
+                                                    data_gap_start_time: Array with the start times of the data gaps that will be skipped
                                                     The indices of this and data_gap_end_time correspond to the same data gap
-                data_gap_end_time               Array with the end times of the data gaps that will be skipped
+                                                    data_gap_end_time: Array with the end times of the data gaps that will be skipped
                                                     The indices of this and data_gap_start_time correspond to the same data gap
-    Usage:      train_lomb_data, train_gap_start_time, train_gap_end_time = get_lomb_data(bg_df, start_train_index, end_train_index, ['bg', 'iob'])
+    Usage:      train_lomb_data = get_lomb_data(bg_df, start_train_index, end_train_index, ['bg', 'iob'])
     """
 
     #Make the time_value_array, which is the array of hours from midnight
     time_value_array = _make_time_value_array(bg_df, start_index, end_index)
     period, bg_lomb, iob_lomb, cob_lomb, data_gap_start_time, data_gap_end_time = _get_lomb_scargle(bg_df, start_index, end_index, plot_lomb_array)
 
-    LombData = namedtuple('LombData', ['period', 'bg_lomb', 'iob_lomb', 'cob_lomb', 'time_value_array']) #namedtouple to store the data
-    lomb_data = LombData(period, bg_lomb, iob_lomb, cob_lomb, time_value_array)
+    lomb_data = LombData(period, bg_lomb, iob_lomb, cob_lomb, time_value_array, data_gap_start_time, data_gap_end_time)
 
-    return lomb_data, data_gap_start_time, data_gap_end_time
+    return lomb_data
