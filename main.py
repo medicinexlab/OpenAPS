@@ -97,11 +97,11 @@ PLOT_LOMB_ARRAY = np.array([])
 #Boolean to show the prediction plot versus the actual bg
 SHOW_PRED_PLOT = False
 #Boolean to save the prediction plot
-SAVE_PRED_PLOT = True
+SAVE_PRED_PLOT = False
 #Boolean to show the Clarke Error Grid plot
 SHOW_CLARKE_PLOT = False
 #Boolean to save the Clarke Error Grid plot
-SAVE_CLARKE_PLOT = True
+SAVE_CLARKE_PLOT = False
 
 
 
@@ -296,7 +296,7 @@ def main():
 
             #Analyze old pred methods
             if len(OLD_PRED_ALGORITHM_ARRAY) != 0:
-                iob_pred, iob_time = analyze_old_pred_data(test_bg_df, OLD_PRED_ALGORITHM_ARRAY, start_test_index, end_test_index, pred_minutes,
+                analyze_old_pred_data(test_bg_df, OLD_PRED_ALGORITHM_ARRAY, start_test_index, end_test_index, pred_minutes,
                                         SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_str)
 
             for data_minutes in DATA_MINUTES_ARRAY:
@@ -346,7 +346,7 @@ def main():
                     test_prediction[test_prediction < MINIMUM_BG] = MINIMUM_BG #Set minimum bg level
                     test_prediction[test_prediction > MAXIMUM_BG] = MAXIMUM_BG #Set maximum bg level
 
-                    analyze_ml_data(actual_bg_test_array, test_prediction, time_bg_test_array, iob_pred, iob_time, SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_str, algorithm_str,
+                    analyze_ml_data(actual_bg_test_array, test_prediction, time_bg_test_array, SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_str, algorithm_str,
                                     "Pred" + str(pred_minutes) + "Data" + str(data_minutes)) #Analyze data
 
                     if SAVE_PRED_DATA:
