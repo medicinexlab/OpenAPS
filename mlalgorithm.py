@@ -51,7 +51,7 @@ def analyze_ml_data(actual_bg_array, bg_prediction, bg_time_array, show_pred_plo
     print "                Mean Absolute Error: " + str(metrics.mean_absolute_error(actual_bg_array, bg_prediction))
     print "                R^2 Coefficient of Determination: " + str(metrics.r2_score(actual_bg_array, bg_prediction))
 
-    plot, zone = ClarkeErrorGrid.clarke_error_grid(actual_bg_array, bg_prediction, id_str + " " + algorithm_str)
+    plot, zone = ClarkeErrorGrid.clarke_error_grid(actual_bg_array, bg_prediction, id_str + " " + algorithm_str + " " + minutes_str)
     print "                Percent A:{}".format(float(zone[0]) / (zone[0] + zone[1] + zone[2] + zone[3] + zone[4]))
     print "                Percent C, D, E:{}".format(float(zone[2] + zone[3] + zone[4])/ (zone[0] + zone[1] + zone[2] + zone[3] + zone[4]))
     print "                Zones are A:{}, B:{}, C:{}, D:{}, E:{}\n".format(zone[0],zone[1],zone[2],zone[3],zone[4])
@@ -61,7 +61,7 @@ def analyze_ml_data(actual_bg_array, bg_prediction, bg_time_array, show_pred_plo
     plt.clf()
     plt.plot(bg_time_array, actual_bg_array, label="Actual BG", color='black', linestyle='-')
     plt.plot(bg_time_array, bg_prediction, label="BG Prediction", color='black', linestyle=':')
-    plt.title(id_str + " " + algorithm_str + " BG Analysis")
+    plt.title(id_str + " " + algorithm_str + " " + minutes_str + " BG Analysis")
     plt.ylabel("Blood Glucose Level (mg/dl)")
     plt.xlabel("Time (minutes)")
     plt.legend(loc='upper left')
