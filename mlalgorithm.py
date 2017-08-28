@@ -24,14 +24,15 @@ import ClarkeErrorGrid
 
 
 #This functions analyzes the data from actual_bg_array and the bg_prediction array
-def analyze_ml_data(actual_bg_array, bg_prediction, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, algorithm_str, minutes_str):
+def analyze_ml_data(actual_bg_array, bg_prediction, bg_time_array, show_pred_plot, save_pred_plot, show_clarke_plot, save_clarke_plot, id_str, algorithm_str, minutes_str):
     """
     Function to analyze and plot the machine learning data. It takes in the actual_bg_array and the bg_prediction and compares
     the two with various analysis methods, such as root mean squared error, mean absolute error,
     R^2 coefficient of determination, and clarke error grid analysis.
 
     Input:      actual_bg_array                 The array of actual bg values
-                bg_prediction                   The array of prediciton bg values
+                bg_prediction                   The array of prediction bg values
+                bg_time_array                   The array of times corresponding to bg_prediction
                 show_pred_plot                  Boolean to show the prediction plot
                 save_pred_plot                  Boolean to save the prediction plot
                 show_clarke_plot                Boolean to show the clarke error grid
@@ -57,10 +58,9 @@ def analyze_ml_data(actual_bg_array, bg_prediction, show_pred_plot, save_pred_pl
     if save_clarke_plot: plt.savefig(id_str + algorithm_str.replace(" ", "") + minutes_str + "clarke.png")
     if show_clarke_plot: plot.show()
 
-    countarray = np.linspace(0, len(actual_bg_array) - 1, len(actual_bg_array))
     plt.clf()
-    plt.plot(countarray, actual_bg_array, label="Actual BG", color='black', linestyle='-')
-    plt.plot(countarray, bg_prediction, label="BG Prediction", color='black', linestyle=':')
+    plt.plot(bg_time_array, actual_bg_array, label="Actual BG", color='black', linestyle='-')
+    plt.plot(bg_time_array, bg_prediction, label="BG Prediction", color='black', linestyle=':')
     plt.title(id_str + " " + algorithm_str + " BG Analysis")
     plt.ylabel("Blood Glucose Level (mg/dl)")
     plt.xlabel("Time (minutes)")

@@ -97,11 +97,11 @@ PLOT_LOMB_ARRAY = np.array([])
 #Boolean to show the prediction plot versus the actual bg
 SHOW_PRED_PLOT = False
 #Boolean to save the prediction plot
-SAVE_PRED_PLOT = False
+SAVE_PRED_PLOT = True
 #Boolean to show the Clarke Error Grid plot
 SHOW_CLARKE_PLOT = False
 #Boolean to save the Clarke Error Grid plot
-SAVE_CLARKE_PLOT = False
+SAVE_CLARKE_PLOT = True
 
 
 
@@ -296,16 +296,16 @@ def main():
 
             #Analyze old pred methods
             if len(OLD_PRED_ALGORITHM_ARRAY) != 0:
-                analyze_old_pred_data(test_bg_df, OLD_PRED_ALGORITHM_ARRAY, start_test_index, end_test_index, pred_minutes,
+                iob_pred, iob_time = analyze_old_pred_data(test_bg_df, OLD_PRED_ALGORITHM_ARRAY, start_test_index, end_test_index, pred_minutes,
                                         SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_str)
 
             for data_minutes in DATA_MINUTES_ARRAY:
                 print "        Data Minutes: " + str(data_minutes)
 
                 #make data matrix inputs and the bg outputs
-                train_data_matrix, actual_bg_train_array = make_data_matrix(train_bg_df, train_lomb_data, start_train_index, end_train_index, data_minutes, pred_minutes)
-                valid_data_matrix, actual_bg_valid_array = make_data_matrix(valid_bg_df, valid_lomb_data, start_valid_index, end_valid_index, data_minutes, pred_minutes)
-                test_data_matrix, actual_bg_test_array = make_data_matrix(test_bg_df, test_lomb_data, start_test_index, end_test_index, data_minutes, pred_minutes)
+                train_data_matrix, actual_bg_train_array, time_bg_train_array = make_data_matrix(train_bg_df, train_lomb_data, start_train_index, end_train_index, data_minutes, pred_minutes)
+                valid_data_matrix, actual_bg_valid_array, time_bg_valid_array = make_data_matrix(valid_bg_df, valid_lomb_data, start_valid_index, end_valid_index, data_minutes, pred_minutes)
+                test_data_matrix, actual_bg_test_array, time_bg_test_array = make_data_matrix(test_bg_df, test_lomb_data, start_test_index, end_test_index, data_minutes, pred_minutes)
 
                 #Analyze ml algorithms
                 for algorithm_str in ALGORITHM_ARRAY:
@@ -346,7 +346,7 @@ def main():
                     test_prediction[test_prediction < MINIMUM_BG] = MINIMUM_BG #Set minimum bg level
                     test_prediction[test_prediction > MAXIMUM_BG] = MAXIMUM_BG #Set maximum bg level
 
-                    analyze_ml_data(actual_bg_test_array, test_prediction, SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_str, algorithm_str,
+                    analyze_ml_data(actual_bg_test_array, test_prediction, time_bg_test_array, iob_pred, iob_time, SHOW_PRED_PLOT, SAVE_PRED_PLOT, SHOW_CLARKE_PLOT, SAVE_CLARKE_PLOT, id_str, algorithm_str,
                                     "Pred" + str(pred_minutes) + "Data" + str(data_minutes)) #Analyze data
 
                     if SAVE_PRED_DATA:

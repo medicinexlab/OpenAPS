@@ -109,14 +109,28 @@ def get_bg_index(bg_df, start_str, end_str, set_str, make_col_bool):
 
 #Makes new dataframe spaced out by 5 minute entries
 def get_new_df_entries_every_5_minutes(bg_df, start_index, end_index, set_str):
+    """
+    Function to take the given bg_df and make a new_bg_df within the start and end indices
+    such that entries are spaced out by 5 minutes (MIN_ENTRY_SPACING_MINUTE).
+
+    Input:      bg_df                           Pandas dataframe of all of the data from ./data/[id_str]/devicestatus.json
+                start_index                     The starting index of the data in the bg_df
+                end_index                       The ending index of the data in the bg_df
+                set_str                         String of the set name (i.e. "Training", "Validation", "Testing")
+    Output:     new_bg_df                       New Pandas dataframe with the data from the original start and end indices
+                                                    such that the entries are spaced out by 5 minutes.
+                start_index                     New starting index for the new_bg_df
+                end_index                       New ending index for the new_bg_df
+    Usage:      bg_df, start_train_index, end_train_index = get_bg_index(bg_df, "2017-05-05", "2017-05-14", "Training", True)
+    """
     new_bg_df = pd.DataFrame()
-    last_time = - MIN_ENTRY_SPACING_MINUTE
+    last_time = 0
     starting_df = True
 
     for df_index in range(end_index, start_index):
         add_entry = False
         try:
-            time = (bg_df.iloc[df_index]['created_at'] - bg_df.iloc[start_index]['created_at']) / np.timedelta64(1, 'm')
+            time = int((bg_df.iloc[df_index]['created_at'] - bg_df.iloc[start_index]['created_at']) / np.timedelta64(1, 'm'))
             test_if_has_enacted = bg_df.iloc[df_index]['openaps']['enacted']['bg'] #Test to see if df entry has suggested and enacted functioning
             test_if_has_suggested = bg_df.iloc[df_index]['openaps']['suggested']['bg']
 

@@ -76,6 +76,7 @@ def _fill_matrix(time_bg_array, actual_bg_array, lomb_data, data_gap_start_time,
     #data_matrix[row,col]
     data_matrix = np.zeros((num_data_time_rows, num_data_cols))
     bg_output = np.zeros(num_data_time_rows)
+    bg_time_output = np.zeros(num_data_time_rows)
 
     for row_index in range(num_data_time_rows):
         #The index of the arrays. Need to find the time of the time_bg_array and then subtract by num_pred_minutes to find the first entry of the data that we will use to make the prediction
@@ -93,15 +94,18 @@ def _fill_matrix(time_bg_array, actual_bg_array, lomb_data, data_gap_start_time,
                 data_matrix[curr_data_row, col_index + 2] = lomb_data.iob_lomb[data_index]
                 data_matrix[curr_data_row, col_index + 3] = lomb_data.cob_lomb[data_index]
 
+            #Update the output arrays
             bg_output[curr_data_row] = actual_bg_array[row_index]
+            bg_time_output[curr_data_row] = time_bg_array[row_index]
 
             curr_data_row += 1
 
     #Resize the matrices and arrays
     data_matrix = np.resize(data_matrix, (curr_data_row, num_data_cols))
     bg_output = np.resize(bg_output, curr_data_row)
+    bg_time_output = np.resize(bg_time_output, curr_data_row)
 
-    return data_matrix, bg_output
+    return data_matrix, bg_output, bg_time_output
 
 
 #Function that returns the actual_bg arrays and the train_matrix for both the training and testing sets
@@ -125,6 +129,7 @@ def make_data_matrix(bg_df, lomb_data, start_index, end_index, num_data_minutes,
 .
     Output:     data_matrix                     The input data matrix for the machine learning algorithm
                 bg_output                       The output array of bg values that corresponds to the data_matrix
+                bg_time_output                  The output array of time values that correspond to the bg_output array
     Usage:      train_data_matrix, actual_bg_train_array = make_data_matrix(bg_df, train_lomb_data, start_train_index, end_train_index, 5, 30)
     """
 
@@ -132,6 +137,6 @@ def make_data_matrix(bg_df, lomb_data, start_index, end_index, num_data_minutes,
     prediction_start_time = num_data_minutes + num_pred_minutes - 1
 
     time_bg_array, actual_bg_array = _make_actual_bg_array(bg_df, start_index, end_index, prediction_start_time)
-    data_matrix, bg_output = _fill_matrix(time_bg_array, actual_bg_array, lomb_data, lomb_data.data_gap_start_time, lomb_data.data_gap_end_time, num_data_minutes, num_pred_minutes)
+    data_matrix, bg_output, bg_time_output = _fill_matrix(time_bg_array, actual_bg_array, lomb_data, lomb_data.data_gap_start_time, lomb_data.data_gap_end_time, num_data_minutes, num_pred_minutes)
 
-    return data_matrix, bg_output
+    return data_matrix, bg_output, bg_time_output
