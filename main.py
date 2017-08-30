@@ -61,11 +61,11 @@ DATA_MINUTES_ARRAY = np.array([5])
 
 #Choose whether to run 'eventualBG', 'iob', 'cob', 'acob'. (e.g. ['iob', 'acob']). Leave empty to run none
 #['acob', 'cob', 'eventualBG', 'iob']
-OLD_PRED_ALGORITHM_ARRAY = np.array(['acob', 'cob', 'eventualBG', 'iob'])
+OLD_PRED_ALGORITHM_ARRAY = np.array([])
 
 #Array of the algorithms that will be tested
-#["Linear Regression", "Ridge Regression", "Lasso Regression", "SVM Linear Regression", "MLP Regression"]
-ALGORITHM_ARRAY = np.array(["Linear Regression", "Ridge Regression", "Lasso Regression", "SVM Linear Regression", "MLP Regression"])
+#["Linear Regression", "Ridge Regression", "Lasso Regression", "SVR Linear Kernel", "MLP Regression"]
+ALGORITHM_ARRAY = np.array(["SVR Linear Kernel"])
 
 #Prints every parameter for the grid search.
 PRINT_PARAMTERS = False
@@ -112,15 +112,15 @@ Constants below
 #Values to be tested for the parameters
 RIDGE_PARAMETER_ARRAY = np.array([0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28, 2.56, 5.12])
 LASSO_PARAMETER_ARRAY = np.array([0.0025, 0.005, 0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28])
-SVM_LINEAR_PARAMETER_ARRAY = np.array([0.005, 0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28, 2.56])
-SVM_LINEAR_EPSILON_ARRAY = np.array([0.0025, 0.005, 0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28])
+SVR_LINEAR_PARAMETER_ARRAY = np.array([0.005, 0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28, 2.56])
+SVR_LINEAR_EPSILON_ARRAY = np.array([0.0025, 0.005, 0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28])
 #Values for MLP parameters
 MLP_LEARNING_ARRAY = np.array([1e-05, 1e-04, 1e-03, 1e-02, 1e-01, 1])
 MLP_LAYER_ARRAY = np.array([2, 4, 8, 16, 32, 64, 128, 256])
 # MLP_FUNCTION_ARRAY = np.array(['identity', 'logistic', 'tanh', 'relu'])
 # MLP_OPTIMIZER_ARRAY = np.array(['lbfgs', 'sgd', 'adam'])
 
-ALGORITHM_LIST = ["Linear Regression", "Ridge Regression", "Lasso Regression", "SVM Linear Regression", "MLP Regression"]
+ALGORITHM_LIST = ["Linear Regression", "Ridge Regression", "Lasso Regression", "SVR Linear Kernel", "MLP Regression"]
 
 #Returns the linear regression model
 def linear_regression_model(parameter_array):
@@ -138,8 +138,8 @@ def lasso_regression_model(parameter_array):
     return linear_model.Lasso(alpha=alpha_value, fit_intercept=True, normalize=True, precompute=False, copy_X=True,
                                 max_iter=1000, tol=0.0001, warm_start=False, positive=False, random_state=None, selection='cyclic')
 
-#Returns the svm linear regression model
-def svm_linear_regression(parameter_array):
+#Returns the SVR Linear Kernel model
+def svr_linear_regression(parameter_array):
     c_value = parameter_array[0]
     # epsilon_value = parameter_array[1]
     return svm.SVR(kernel='linear', degree=3, gamma='auto', coef0=0.0, tol=0.001, C=c_value, epsilon=0.1, shrinking=True, cache_size=200, verbose=False, max_iter=-1)
@@ -159,14 +159,14 @@ ALGORITHM_DICT = {
     "Linear Regression":linear_regression_model,
     "Ridge Regression":ridge_regression_model,
     "Lasso Regression":lasso_regression_model,
-    "SVM Linear Regression":svm_linear_regression,
+    "SVR Linear Kernel":svr_linear_regression,
     "MLP Regression":mlp_regression}
 
 ALGORITHM_PARAMETERS = {
     "Linear Regression":np.array([np.array([1])]),
     "Ridge Regression":np.array([RIDGE_PARAMETER_ARRAY]),
     "Lasso Regression":np.array([LASSO_PARAMETER_ARRAY]),
-    "SVM Linear Regression":np.array([SVM_LINEAR_PARAMETER_ARRAY]),
+    "SVR Linear Kernel":np.array([SVR_LINEAR_PARAMETER_ARRAY]),
     "MLP Regression":np.array([MLP_LAYER_ARRAY,MLP_LAYER_ARRAY,MLP_LEARNING_ARRAY])}
 
 #Dictionary with the name of the algorithm as the key and boolean to apply the StandardScaler transformation as the value
@@ -174,7 +174,7 @@ ALGORITHM_TRANSFORM = {
     "Linear Regression":False,
     "Ridge Regression":False,
     "Lasso Regression":False,
-    "SVM Linear Regression":True,
+    "SVR Linear Kernel":True,
     "MLP Regression":True}
 
 #Prediction CONSTANTS
