@@ -35,7 +35,8 @@ EVENTUALBG_PRED_MINUTES = 30
 def _new_pred_array(start_index, end_index, total_len):
     pred_array = np.zeros(total_len)
     time_array = np.zeros(total_len)
-    curr = miss = 0
+    curr = 0
+    miss = 0
 
     return pred_array, time_array, curr, miss
 
@@ -159,7 +160,8 @@ def _find_compare_array(actual_bg_array, actual_bg_time_array, pred_array, pred_
     result_actual_bg_time_array = np.zeros(array_len)
     result_pred_array = np.zeros(array_len)
     result_pred_time_array = np.zeros(array_len)
-    curr = miss = 0
+    curr = 0
+    miss = 0
 
     for array_index in range(array_len):
         #The time that the prediction is predicting for

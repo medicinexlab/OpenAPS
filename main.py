@@ -61,11 +61,11 @@ DATA_MINUTES_ARRAY = np.array([5])
 
 #Choose whether to run 'eventualBG', 'iob', 'cob', 'acob'. (e.g. ['iob', 'acob']). Leave empty to run none
 #['acob', 'cob', 'eventualBG', 'iob']
-OLD_PRED_ALGORITHM_ARRAY = np.array([])
+OLD_PRED_ALGORITHM_ARRAY = np.array(['acob', 'cob', 'eventualBG', 'iob'])
 
 #Array of the algorithms that will be tested
 #["Linear Regression", "Ridge Regression", "Lasso Regression", "SVR Linear Kernel", "MLP Regression"]
-ALGORITHM_ARRAY = np.array(["SVR Linear Kernel"])
+ALGORITHM_ARRAY = np.array(["Linear Regression", "Ridge Regression", "Lasso Regression", "SVR Linear Kernel", "MLP Regression"])
 
 #Prints every parameter for the grid search.
 PRINT_PARAMTERS = False

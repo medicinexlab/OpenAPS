@@ -22,7 +22,8 @@ def _make_actual_bg_array(bg_df, start_index, end_index, prediction_start_time):
     total_len = start_index - end_index + 1
     time_bg_array = np.zeros(total_len)
     actual_bg_array = np.zeros(total_len)
-    array_index = miss = 0
+    array_index = 0
+    miss = 0
 
     for df_index in range(start_index, end_index - 1, -1):
         #Keep track of the time starting at 0 at the start_index
